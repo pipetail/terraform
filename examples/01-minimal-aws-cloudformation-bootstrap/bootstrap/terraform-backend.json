@@ -1,0 +1,82 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Terraform remote state backend",
+  "Parameters": {
+    "BucketName": {
+      "Type": "String",
+      "Description": "Terraform state S3 bucket name."
+    },
+    "TableName": {
+      "Type": "String",
+      "Description": "Terraform state DynamoDB table name."
+    }
+  },
+  "Resources": {
+    "TerraformRemoteStateS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketName": {
+          "Ref": "BucketName"
+        },
+        "AccessControl": "Private",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "aws:kms"
+              }
+            }
+          ]
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "BucketName"
+            }
+          }
+        ]
+      }
+    },
+    "TerraformRemoteStateLockDynamoDBTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "TableName": {
+          "Ref": "TableName"
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "LockID",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "LockID",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "SSESpecification": {
+          "SSEEnabled": true
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "TableName"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
