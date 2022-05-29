@@ -9,8 +9,11 @@ repos:
       - id: terraform_tflint
         args:
           - '--args=--config=__GIT_WORKING_DIR__/.tflint.hcl'
+          - '--args=--disable-rule=terraform_standard_module_structure'
       #- id: terraform_tfsec
       - id: checkov
+        args:
+         - '--skip-framework=cloudformation'
 
   - repo: https://github.com/cisagov/pre-commit-packer
     rev: v0.0.2
@@ -43,12 +46,6 @@ repos:
     hooks:
       - id: shfmt
         args: ['-l', '-i', '2', '-ci', '-sr', '-w']
-
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.26.3
-    hooks:
-      - id: yamllint
-        files: \.(yaml)$
 
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.9.1

@@ -55,4 +55,3 @@ jobs:
             --show-diff-on-failure \
             --from-ref origin/${GITHUB_BASE_REF} \
             --to-ref HEAD
-

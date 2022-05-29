@@ -41,4 +41,3 @@ However, pre-commit hooks are going to run automatically every time you try to `
 
 ## direnv
 .envrc in every folder using includes + correct AWS_PROFILE
-

@@ -43,4 +43,3 @@ modules/**/.terraform.lock.hcl
 
 # Ignore private SSH keys
 *.pem
-
