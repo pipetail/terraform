@@ -1,0 +1,58 @@
+---
+name: precommit
+
+on: [pull_request]
+
+jobs:
+  precommit:
+    runs-on: ubuntu-latest
+    name: Run pre-commit checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3 python3-pip curl unzip
+          # tflint
+          curl -sSLo ./tflint.zip \
+            https://github.com/terraform-linters/tflint/releases/download/v0.34.1/tflint_linux_amd64.zip
+          unzip ./tflint.zip
+          chmod +x ./tflint
+          sudo mv tflint /usr/local/bin/tflint
+
+          # terraform
+          curl -sSLo ./terraform.zip \
+            https://releases.hashicorp.com/terraform/1.1.6/terraform_1.1.6_linux_amd64.zip
+          sudo unzip -o ./terraform.zip -d /usr/local/bin/
+          sudo chmod +x /usr/local/bin/terraform
+
+          # terraform-docs
+          curl -sSLo ./terraform-docs.tar.gz \
+            https://terraform-docs.io/dl/v0.15.0/terraform-docs-v0.15.0-$(uname)-amd64.tar.gz
+          tar -xzf ./terraform-docs.tar.gz
+          chmod +x ./terraform-docs
+          sudo mv ./terraform-docs /usr/local/bin/terraform-docs
+
+          # shfmt
+          curl -sSLo ./shfmt \
+            https://github.com/mvdan/sh/releases/download/v3.4.0/shfmt_v3.4.0_linux_amd64
+          chmod +x ./shfmt
+          sudo mv ./shfmt /usr/local/bin/shfmt
+
+          pip install pre-commit
+
+      - name: pre-commit run
+        run: |
+          # this path is needed for pre-commit
+          export PATH="~/.local/bin:$PATH"
+
+          tflint --init --config .tflint.hcl
+          pre-commit run \
+            --show-diff-on-failure \
+            --from-ref origin/${GITHUB_BASE_REF} \
+            --to-ref HEAD
+
