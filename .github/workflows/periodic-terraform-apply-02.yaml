@@ -1,0 +1,38 @@
+---
+name: auto-terraform-apply-02-minimal-gcp-tf-bootstrap
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: 02-minimal-gcp-tf-bootstrap - apply approved terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: 'github-actions@pipetail-terraform.iam.gserviceaccount.com'
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@v1
+        with:
+          path: examples/02-minimal-gcp-tf-bootstrap
+          auto_approve: true
