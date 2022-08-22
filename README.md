@@ -1,4 +1,12 @@
 # terraform
+This repo is trying to show how we use terraform in [pipetail](https://pipetail.io).
+
+It is for our internal use to reference external terraform modules as well as a "terraform skeleton" to bootstrap new infrastructure.
+We also use it for educational purposes as a reference in our workshops.
+
+We hope this will also help to anyone out there searching for some terraform "best practices" and inspiration for "public cloud infrastructure codebases".
+
+Any feedback & contributions are welcome!
 
 ## pre-commit
 This repository uses pre-commit framework https://pre-commit.com. Please install
