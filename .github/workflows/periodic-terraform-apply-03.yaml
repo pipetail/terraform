@@ -1,0 +1,40 @@
+---
+name: auto-terraform-apply-03-aws-github-actions-oidc
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: 03-aws-github-actions-oidc - apply approved terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@v1
+        with:
+          path: examples/03-aws-github-actions-oidc
+          auto_approve: true
+
+      # TODO: maybe we can try to 'docker push' here to the ECR repo as an example that the OIDC works

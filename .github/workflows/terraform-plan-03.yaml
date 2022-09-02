@@ -1,0 +1,40 @@
+---
+name: terraform-plan-03-aws-github-actions-oidc
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - "examples/03-aws-github-actions-oidc/**"
+      - "modules/**"
+      - ".github/workflows/**"
+
+jobs:
+  tf-plan:
+    runs-on: ubuntu-latest
+    name: 03-aws-github-actions-oidc - terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform plan
+        uses: dflook/terraform-plan@v1
+        with:
+          path: examples/03-aws-github-actions-oidc
