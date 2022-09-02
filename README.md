@@ -97,7 +97,9 @@ There are several GitHub Actions workflows:
 
 - `precommit.yaml` - to check everything with pre-commit in Pull Requests since some people might "forget" to use it :))
 - `terraform-validate.yaml` - to `terraform validate` everything
-- `terraform-plan-*.yaml` - to `terraform plan` all folders
+- `terraform-plan-*.yaml` - to `terraform plan` all folders in PRs
+- `terraform-apply-*.yaml` - to `terraform apply` all approved plans from PRs (approved == merged PR)
+- `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
 
 ## tflint
 
@@ -129,6 +131,6 @@ I'm writing this here as a TODO.
 Basically just [this](https://www.terraform-best-practices.com/naming)
 
 - `snake_case` in terraform resource names (no convention for cloud resources names, often we use `camel-case`)
-- don't repeate resource types in names, `resource "aws_route_table" "public_route_table"` is ugly and long
+- don't repeat resource types in names, `resource "aws_route_table" "public_route_table"` is ugly and long
 
 these are (partially) enforces by `tflint`.
