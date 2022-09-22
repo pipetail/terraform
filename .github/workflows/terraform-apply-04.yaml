@@ -1,0 +1,41 @@
+---
+name: terraform-apply-04-wireguard-vpn
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "examples/04-wireguard-vpn/**"
+      - "modules/wireguard-ec2/**"
+      - ".github/workflows/**"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: 04-wireguard-vpn - apply approved terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@v1
+        with:
+          path: examples/04-wireguard-vpn
