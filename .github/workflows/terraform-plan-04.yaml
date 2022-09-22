@@ -1,5 +1,5 @@
 ---
-name: terraform-plan-04-wireguard-vpn
+name: terraform-plan-04-aws-wireguard-vpn
 
 permissions:
   id-token: write      # for fetching the OIDC token
@@ -12,14 +12,14 @@ on:
     branches:
       - "master"
     paths:
-      - "examples/04-wireguard-vpn/**"
+      - "examples/04-aws-wireguard-vpn/**"
       - "modules/wireguard-ec2"
       - ".github/workflows/**"
 
 jobs:
   tf-plan:
     runs-on: ubuntu-latest
-    name: 04-wireguard-vpn - terraform plan
+    name: 04-aws-wireguard-vpn - terraform plan
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -37,4 +37,4 @@ jobs:
       - name: Terraform plan
         uses: dflook/terraform-plan@v1
         with:
-          path: examples/04-wireguard-vpn
+          path: examples/04-aws-wireguard-vpn
