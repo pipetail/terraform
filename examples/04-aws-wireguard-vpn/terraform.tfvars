@@ -8,4 +8,4 @@ subnets = {
 }
 
 // paste from packer
-//wireguard_ami = "ami-1234567890"
+wireguard_ami = "ami-05dff77713a4fa273"
