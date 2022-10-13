@@ -36,6 +36,6 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@90c96554557e0821d6a6ee5579cbf305b788bb0e # tag=v1
+        uses: dflook/terraform-apply@f684172d8355bccb734233be478f712e44779f65 # tag=v1
         with:
           path: examples/04-aws-wireguard-vpn
