@@ -20,19 +20,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
         with:
           ref: master
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1
         with:
           role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
           role-session-name: GithubActionsTerraform
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@v1
+        uses: dflook/terraform-apply@90c96554557e0821d6a6ee5579cbf305b788bb0e # tag=v1
         with:
           path: examples/03-aws-github-actions-oidc
           auto_approve: true
