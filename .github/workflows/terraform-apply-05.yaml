@@ -1,0 +1,46 @@
+---
+name: terraform-apply-05-aws-complete
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "examples/05-aws-complete/**"
+      - ".github/workflows/**"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: 05-aws-complete - apply approved terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@8903ce28e2bc45fb7e2d6d05b575c79ae5389923 # tag=v1
+        with:
+          path: examples/05-aws-complete
+
+      - name: Terraform destroy
+        uses: dflook/terraform-destroy@main
+        with:
+          path: examples/05-aws-complete
+          auto_approve: true
