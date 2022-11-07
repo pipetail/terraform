@@ -17,8 +17,10 @@ variable "vpc_cidr" {
 variable "subnets" {
   description = "VPC subnets CIDRs"
   type = object({
-    public  = list(string)
-    private = list(string)
+    public      = list(string)
+    private     = list(string)
+    database    = list(string)
+    elasticache = list(string)
   })
 }
 
