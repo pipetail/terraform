@@ -29,3 +29,9 @@ variable "notification_emails" {
   description = "List of emails where to send monitoring notifications"
   default     = []
 }
+
+variable "retention_in_days" {
+  description = "log retention in days to be used throughout the module"
+  type        = number
+  default     = 7
+}

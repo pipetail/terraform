@@ -12,3 +12,5 @@ subnets = {
 notification_emails = [
   "marek.bartik@pipetail.io"
 ]
+
+retention_in_days = 30
