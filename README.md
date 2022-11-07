@@ -104,12 +104,13 @@ There are several GitHub Actions workflows:
 ## tflint
 
 ## checkov
+[Checkov]() is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
 
 ## direnv
 .envrc in every folder using includes + correct AWS_PROFILE
 
 ## tfenv
-
+We use [tfenv](https://github.com/tfutils/tfenv) to manage multiple terraform versions on our local workstations.
 
 ## shellcheck
 What kind of infra would be it if it's not sprinkled with some shell scripts?
@@ -133,4 +134,4 @@ Basically just [this](https://www.terraform-best-practices.com/naming)
 - `snake_case` in terraform resource names (no convention for cloud resources names, often we use `camel-case`)
 - don't repeat resource types in names, `resource "aws_route_table" "public_route_table"` is ugly and long
 
-these are (partially) enforces by `tflint`.
+these are (partially) enforced by `tflint`.
