@@ -18,6 +18,8 @@ resource "aws_s3_bucket" "cloudtrail" {
   # checkov:skip=CKV_AWS_145: KMS not needed here
   # checkov:skip=CKV_AWS_144: Not needed here
   bucket = "${var.name_prefix}-cloudtrail"
+
+  force_destroy = true // this is here only because of our terraform destroy workflow
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail" {
