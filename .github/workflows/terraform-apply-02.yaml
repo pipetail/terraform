@@ -13,7 +13,7 @@ on:
     paths:
       - "examples/02-minimal-gcp-tf-bootstrap/**"
       - "modules/**"
-      - ".github/workflows/**"
+      - ".github/workflows/**02.yaml"
 
 jobs:
   tf-apply:
