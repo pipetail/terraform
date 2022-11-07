@@ -14,7 +14,7 @@ on:
     paths:
       - "examples/03-aws-github-actions-oidc/**"
       - "modules/**"
-      - ".github/workflows/**"
+      - ".github/workflows/**03.yaml"
 
 jobs:
   tf-plan:
