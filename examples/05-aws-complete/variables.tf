@@ -21,3 +21,9 @@ variable "subnets" {
     private = list(string)
   })
 }
+
+variable "notification_emails" {
+  type        = list(string)
+  description = "List of emails where to send monitoring notifications"
+  default     = []
+}
