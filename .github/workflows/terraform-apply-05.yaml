@@ -43,4 +43,3 @@ jobs:
         uses: dflook/terraform-destroy@main
         with:
           path: examples/05-aws-complete
-          auto_approve: true
