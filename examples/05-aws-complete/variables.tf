@@ -35,3 +35,20 @@ variable "retention_in_days" {
   type        = number
   default     = 7
 }
+
+variable "redis" {
+  description = "AWS ElastiCache (Redis)"
+  type = object({
+    node_type      = string
+    node_num       = number
+    cluster_id     = string
+    engine_version = string
+  })
+
+  default = {
+    node_type      = "cache.t3.micro"
+    node_num       = 1
+    cluster_id     = "redis"
+    engine_version = "6.2"
+  }
+}

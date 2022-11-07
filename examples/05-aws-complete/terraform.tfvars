@@ -14,3 +14,10 @@ notification_emails = [
 ]
 
 retention_in_days = 30
+
+redis = {
+  cluster_id     = "redis-cluster"
+  node_type      = "cache.t4g.medium"
+  node_num       = 2
+  engine_version = "6.2"
+}
