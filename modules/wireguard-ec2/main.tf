@@ -1,7 +1,7 @@
 
 module "sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "4.16.0"
+  version = "4.16.2"
 
   name        = "wireguard-vpn"
   description = "wireguard vpn"
