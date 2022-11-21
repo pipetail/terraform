@@ -11,6 +11,9 @@ resource "aws_elasticache_replication_group" "redis" {
   node_type                   = "cache.t4g.small"
   num_cache_clusters          = var.redis.node_num
 
+  engine         = "redis"
+  engine_version = "6.2"
+
   port               = 6379
   subnet_group_name  = module.vpc.elasticache_subnet_group_name
   security_group_ids = [module.sg_redis.security_group_id]
