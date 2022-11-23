@@ -35,6 +35,6 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform plan
-        uses: dflook/terraform-plan@50b375f84b6c68c386d78ca53b2af6067eea3d7c # tag=v1
+        uses: dflook/terraform-plan@cf2c225e3088d0cbd3bedc68690c216033e3013a # v1
         with:
           path: examples/04-aws-wireguard-vpn
