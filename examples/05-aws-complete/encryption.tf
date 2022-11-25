@@ -34,7 +34,6 @@ data "aws_iam_policy_document" "allow_main_kms" {
     resources = ["*"]
     sid       = "Allow cloudwatch log group encryption"
   }
-
 }
 
 resource "aws_kms_key" "main" {

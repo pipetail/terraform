@@ -1,0 +1,8 @@
+[settings.kubernetes.node-labels]
+nodepool = "${name}"
+"bottlerocket.aws/updater-interface-version" = "2.0.0"
+
+%{ if set_taint == true }
+[settings.kubernetes.node-taints]
+"nodepool" = "${name}:NoSchedule"
+%{ endif }
