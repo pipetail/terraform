@@ -4,6 +4,12 @@ provider "aws" {
   region = var.region
 }
 
+provider "kubernetes" {
+  host                   = module.eks.endpoint
+  cluster_ca_certificate = module.eks.cluster_certificate_authority_data
+  token                  = module.eks.token
+}
+
 terraform {
   required_version = ">= 1.0.0"
 
@@ -19,6 +25,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "=4.38.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.11.0"
     }
   }
 }
