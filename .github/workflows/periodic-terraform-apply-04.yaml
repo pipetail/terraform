@@ -32,7 +32,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@8557c0088051857ee228a9265efcca8dcdf167d3 # v1
+        uses: dflook/terraform-apply@3bbc265f1c260a7b38cebf10218a94e08285550a # v1
         with:
           path: examples/04-aws-wireguard-vpn
           auto_approve: true
