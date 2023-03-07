@@ -5,6 +5,9 @@
 *.tfstate
 *.tfstate.*
 
+# the bootstrap tfstate should be versioned in the repo
+!**/bootstrap*/terraform.tfstate
+
 # Crash log files
 crash.log
 

@@ -1,0 +1,45 @@
+---
+name: terraform-apply-06-minimal-aws-terraform-bootstrap
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "examples/06-minimal-aws-terraform-bootstrap/**"
+      - ".github/workflows/**"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: 06-minimal-aws-terraform-bootstrap - apply approved terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+        with:
+          ref: master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@8557c0088051857ee228a9265efcca8dcdf167d3 # v1
+        with:
+          path: examples/06-minimal-aws-terraform-bootstrap
+
+      - name: Terraform destroy
+        uses: dflook/terraform-destroy@main
+        with:
+          path: examples/06-minimal-aws-terraform-bootstrap
