@@ -1,0 +1,39 @@
+---
+name: terraform-plan-06-minimal-aws-terraform-bootstrap
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - "examples/06-minimal-aws-terraform-bootstrap/**"
+      - ".github/workflows/**"
+
+jobs:
+  tf-plan:
+    runs-on: ubuntu-latest
+    name: 06-minimal-aws-terraform-bootstrap - terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform plan
+        uses: dflook/terraform-plan@a1baf8064470a030c143e483d61ed9e37087989e # v1
+        with:
+          path: examples/06-minimal-aws-terraform-bootstrap
