@@ -135,3 +135,8 @@ Basically just [this](https://www.terraform-best-practices.com/naming)
 - don't repeat resource types in names, `resource "aws_route_table" "public_route_table"` is ugly and long
 
 these are (partially) enforced by `tflint`.
+
+## contributions
+special thanks to
+ [@vranystepan] (https://github.com/vranystepan)
+ [@vdovhanych] (https://github.com/vdovhanych)
