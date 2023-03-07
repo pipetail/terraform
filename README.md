@@ -138,5 +138,5 @@ these are (partially) enforced by `tflint`.
 
 ## contributions
 special thanks to
- [@vranystepan] (https://github.com/vranystepan)
- [@vdovhanych] (https://github.com/vdovhanych)
+- [@vranystepan](https://github.com/vranystepan)
+- [@vdovhanych](https://github.com/vdovhanych)
