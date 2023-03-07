@@ -80,6 +80,8 @@ resource "google_storage_bucket" "audit" {
   force_destroy               = true
   uniform_bucket_level_access = true
 
+  public_access_prevention = "enforced"
+
   versioning {
     enabled = true
   }
@@ -105,7 +107,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.15.0"
+      version = "~> 4.56.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"

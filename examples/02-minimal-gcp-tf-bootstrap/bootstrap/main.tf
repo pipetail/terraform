@@ -14,6 +14,8 @@ resource "google_storage_bucket" "terraform_state" {
   location      = "europe-west1"
   force_destroy = true
 
+  public_access_prevention = "enforced"
+
   versioning {
     enabled = true
   }
@@ -25,7 +27,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.15.0"
+      version = "~> 4.56.0"
     }
   }
 }
