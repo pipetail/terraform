@@ -32,7 +32,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@3bbc265f1c260a7b38cebf10218a94e08285550a # v1
+        uses: dflook/terraform-apply@cebeca097cfb296baa87aa500fc2973111b9f99a # v1
         with:
           path: examples/03-aws-github-actions-oidc
           auto_approve: true
