@@ -3,11 +3,11 @@ terraform {
 }
 
 module "bootstrap" {
-  source  = "trussworks/bootstrap/aws"
-  version = "3.0.0"
+  //source  = "github.com/pipetail/terraform//modules/aws-bootstrap"
+  source = "../../../modules/aws-bootstrap"
 
-  region        = "eu-west-1"
-  account_alias = "06-minimal-aws-terraform-bootstrap"
+  region      = "eu-west-1"
+  name_prefix = "06-minimal-aws-terraform-bootstrap"
 }
 
 output "bootstrap" {
