@@ -44,7 +44,7 @@ jobs:
           sudo mv ./shfmt /usr/local/bin/shfmt
 
           pip install pre-commit
-          pip install checkov
+          pip install checkov==2.3.148
 
 
       - name: pre-commit run
