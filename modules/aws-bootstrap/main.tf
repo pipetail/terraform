@@ -34,9 +34,9 @@ module "terraform_state" {
   tags = var.state_bucket_tags
 }
 
-# Ignore warnings about point-in-time recovery since this table holds no data
-# The terraform state lock is meant to be ephemeral and does not need recovery
 resource "aws_dynamodb_table" "terraform_state_lock" {
+  #checkov:skip=CKV_AWS_28: The terraform state lock is meant to be ephemeral and does not need recovery
+  #checkov:skip=CKV_AWS_119: The terraform state lock does not hold any sensitive data
   name         = var.dynamodb_table_name
   hash_key     = "LockID"
   billing_mode = "PAY_PER_REQUEST"
