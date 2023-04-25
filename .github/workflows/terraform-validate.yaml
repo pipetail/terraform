@@ -1,6 +1,8 @@
 ---
 name: terraform-prepare
 
+permissions: read-all
+
 on:
   pull_request:
     branches:
