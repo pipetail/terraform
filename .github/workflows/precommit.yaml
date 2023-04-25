@@ -3,6 +3,8 @@ name: precommit
 
 on: [pull_request]
 
+permissions: read-all
+
 jobs:
   precommit:
     runs-on: ubuntu-latest
