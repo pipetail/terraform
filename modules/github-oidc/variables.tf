@@ -1,17 +1,17 @@
-variable "repository_name" {
-  type        = string
-  description = "Github org and repository name (full path) to be allowed in OIDC"
-  default     = ""
+variable "roles" {
+  description = "Map of IAM Roles that will be assumed from GitHub Actions repos"
+  type        = any
+  default     = {}
 }
 
-variable "managed_policy_arns" {
-  type        = list(any)
-  description = "IAM Managed Policy ARNs to be attached to the created IAM Role"
-  default     = []
+variable "create_oidc_provider" {
+  default     = true
+  type        = bool
+  description = "Should we create and manage the OIDC provider for GitHub actions?"
 }
 
-variable "role_name" {
+variable "oidc_provider_arn" {
+  default     = null
   type        = string
-  description = "IAM Role name to be created"
-  default     = "github_actions"
+  description = "OIDC provider ARN in case create_oidc_provider is false"
 }

@@ -1,5 +1,6 @@
 // https://github.com/aws-actions/configure-aws-credentials
 resource "aws_iam_openid_connect_provider" "github" {
+  count = var.create_oidc_provider ? 1 : 0
   client_id_list = [
     "sts.amazonaws.com",
   ]
@@ -26,7 +27,9 @@ data "tls_certificate" "token" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name = var.role_name
+  for_each = var.roles
+
+  name = each.key
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -34,18 +37,18 @@ resource "aws_iam_role" "github_actions" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
+          Federated = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : var.oidc_provider_arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
 
-          StringLike = {                                                                // StringLike is important here for any wildcards on the line below
-            "token.actions.githubusercontent.com:sub" = "repo:${var.repository_name}:*" // the last '*' allows ALL BRANCHES
+          StringLike = {                                                                       // StringLike is important here for any wildcards on the line below
+            "token.actions.githubusercontent.com:sub" = "repo:${each.value.repository_name}:*" // the last '*' allows ALL BRANCHES
           }
         }
       }
     ]
   })
 
-  managed_policy_arns = var.managed_policy_arns
+  managed_policy_arns = lookup(each.value, "managed_policy_arns", [])
 }
