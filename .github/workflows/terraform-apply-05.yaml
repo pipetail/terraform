@@ -39,6 +39,14 @@ jobs:
         with:
           path: examples/05-aws-complete
 
+      - name: 'Upload Errored tfstate after failure'
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: errored.tfstate
+          path: examples/05-aws-complete
+          retention-days: 30
+
       - name: Terraform destroy
         uses: dflook/terraform-destroy@main
         with:
