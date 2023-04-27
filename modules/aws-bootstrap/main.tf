@@ -4,7 +4,7 @@ locals {
 
 module "terraform_state" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.8.2"
+  version = "3.9.0"
 
   bucket = local.state_bucket
 
