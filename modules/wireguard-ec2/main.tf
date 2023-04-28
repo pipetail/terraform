@@ -27,7 +27,7 @@ module "sg" {
 module "ec2_instance" {
 
   source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 4.0"
+  version = "~> 5.0"
 
   create = var.create_instance
 
