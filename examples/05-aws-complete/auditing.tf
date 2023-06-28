@@ -17,6 +17,8 @@ resource "aws_s3_bucket" "cloudtrail" {
   # checkov:skip=CKV_AWS_21: Object versioning not needed here
   # checkov:skip=CKV_AWS_145: KMS not needed here
   # checkov:skip=CKV_AWS_144: Not needed here
+  # checkov:skip=CKV2_AWS_61: "Ensure that an S3 bucket has a lifecycle configuration": Not needed here
+  # checkov:skip=CKV2_AWS_62: "Ensure S3 buckets should have event notifications enabled": Not needed here
   bucket = "${var.name_prefix}-cloudtrail"
 
   force_destroy = true // this is here only because of our terraform destroy workflow
