@@ -4,9 +4,7 @@ resource "aws_iam_openid_connect_provider" "github" {
     "sts.amazonaws.com",
   ]
 
-  thumbprint_list = [
-    data.tls_certificate.token.certificates[0].sha1_fingerprint
-  ]
+  thumbprint_list = data.tls_certificate.token.certificates[*].sha1_fingerprint
 
   url = "https://token.actions.githubusercontent.com"
 
