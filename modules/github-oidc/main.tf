@@ -4,7 +4,15 @@ resource "aws_iam_openid_connect_provider" "github" {
     "sts.amazonaws.com",
   ]
 
-  thumbprint_list = data.tls_certificate.token.certificates[*].sha1_fingerprint
+  thumbprint_list = distinct(
+    concat(
+      [
+        "6938fd4d98bab03faadb97b34396831e3780aea1",
+        "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+      ],
+      [for certificate in data.tls_certificate.token.certificates : certificate.sha1_fingerprint if certificate.is_ca]
+    )
+  )
 
   url = "https://token.actions.githubusercontent.com"
 
@@ -14,7 +22,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 data "tls_certificate" "token" {
-  url = "https://token.actions.githubusercontent.com/.well-known/jwks"
+  url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
 }
 
 resource "aws_iam_role" "github_actions" {
