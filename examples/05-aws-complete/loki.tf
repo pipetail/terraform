@@ -216,8 +216,8 @@ data "aws_iam_policy_document" "loki_storage" {
       "s3:DeleteObject",
     ]
     resources = [
-      aws_s3_bucket.loki.arn,
-      "${aws_s3_bucket.loki.arn}/*"
+      module.loki_storage.s3_bucket_arn,
+      "${module.loki_storage.s3_bucket_arn}/*"
     ]
   }
 }
@@ -234,42 +234,30 @@ resource "aws_iam_role_policy" "loki_ecs_task_command_exec" {
   policy = data.aws_iam_policy_document.allow_command_exec.json
 }
 
-resource "aws_s3_bucket" "loki" {
-  #checkov:skip=CKV_AWS_18:loki bucket needs to access logging
-  #checkov:skip=CKV_AWS_144:logs are not as important to have them replicated to another region
-  #checkov:skip=CKV_AWS_21:logs don't need to be versioned
-  #checkov:skip=CKV_AWS_145:logs don't have to be encrypted with KMS TODO: this is for simplicity, maybe it would be better to switch to KMS
-  bucket = "${var.name_prefix}-loki-storage"
-}
+module "loki_storage" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "3.14.0"
 
-resource "aws_s3_bucket_versioning" "loki" {
-  bucket = aws_s3_bucket.loki.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_acl" "loki" {
-  bucket = aws_s3_bucket.loki.id
+  bucket = "${var.name_prefix}-loki-data"
   acl    = "private"
-}
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "loki" {
-  bucket = aws_s3_bucket.loki.bucket
+  control_object_ownership = true
+  object_ownership         = "BucketOwnerPreferred"
 
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm = "AES256"
+      }
     }
   }
-}
 
-resource "aws_s3_bucket_public_access_block" "loki" {
-  bucket = aws_s3_bucket.loki.id
+  versioning = {
+    enabled = false
+  }
 
-  restrict_public_buckets = true
+  block_public_acls       = true
+  block_public_policy     = true
   ignore_public_acls      = true
-
-  block_public_acls   = true
-  block_public_policy = true
+  restrict_public_buckets = true
 }
