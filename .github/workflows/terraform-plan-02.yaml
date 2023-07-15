@@ -35,6 +35,6 @@ jobs:
           service_account: 'github-actions@pipetail-terraform.iam.gserviceaccount.com'
 
       - name: Terraform plan
-        uses: dflook/terraform-plan@3b692f12329bd407fbd99d9a54e2e22e247fb742 # v1
+        uses: dflook/terraform-plan@a8d7e66e63aff79825a46e3374c4fd66ff9ce543 # v1
         with:
           path: examples/02-minimal-gcp-tf-bootstrap
