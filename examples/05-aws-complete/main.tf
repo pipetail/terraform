@@ -4,10 +4,27 @@ provider "aws" {
   region = var.region
 }
 
+provider "aws" {
+  region = "us-east-1"
+  alias  = "virginia"
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = "${var.name_prefix}-prod"
+}
+
 provider "kubernetes" {
   host                   = module.eks.endpoint
-  cluster_ca_certificate = module.eks.cluster_certificate_authority_data
-  token                  = module.eks.token
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
 }
 
 terraform {
@@ -28,7 +45,11 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.11.0"
+      version = "~> 2.20.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.9.0"
     }
   }
 }

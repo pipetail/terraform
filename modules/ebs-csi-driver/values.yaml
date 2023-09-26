@@ -1,0 +1,19 @@
+node:
+  serviceAccount:
+    create: true
+    name: ebs-csi-node-sa
+    annotations:
+      eks.amazonaws.com/role-arn: ${node_role_arn}
+
+controller:
+  serviceAccount:
+    create: true
+    name: ebs-csi-controller-sa
+    annotations:
+      eks.amazonaws.com/role-arn: ${controller_role_arn}
+
+enableVolumeResizing: true
+enableVolumeSnapshot: true
+
+image:
+  repository: ${image_aws_account}.dkr.ecr.${region}.amazonaws.com/eks/aws-ebs-csi-driver

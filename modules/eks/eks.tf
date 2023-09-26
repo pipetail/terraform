@@ -1,42 +1,52 @@
 locals {
-  default_tags = [
-    {
-      key                 = "k8s.io/cluster-autoscaler/enabled"
-      value               = "true"
-      propagate_at_launch = false
-    },
-    {
-      key                 = "k8s.io/cluster-autoscaler/${var.name}"
-      value               = "owned"
-      propagate_at_launch = false
-    },
-  ]
+  default_tags = {
+    "k8s.io/cluster-autoscaler/enabled"     = "true"
+    "k8s.io/cluster-autoscaler/${var.name}" = "owned"
+  }
 }
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "17.24.0"
+  version = "19.15.1"
 
-  cluster_encryption_config = [
-    {
-      provider_key_arn = var.secrets_encryption_kms_key_arn
-      resources = [
-        "secrets",
-      ]
+  cluster_endpoint_public_access = true
+
+  cluster_addons = {
+    coredns = {
+      most_recent = true
     }
-  ]
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+  }
+
+  # Self managed node groups will not automatically create the aws-auth configmap so we need to
+  create_aws_auth_configmap = true
+  manage_aws_auth_configmap = true
+
+  cluster_encryption_config = {
+    resources        = ["secrets"]
+    provider_key_arn = var.secrets_encryption_kms_key_arn
+  }
 
   cluster_name    = var.name
   cluster_version = var.k8s_version
-  subnets         = var.control_plane_subnets
+  subnet_ids      = var.control_plane_subnets
   vpc_id          = var.vpc_id
 
-  map_roles = var.map_roles
+  iam_role_additional_policies = {
+    additional = data.aws_iam_policy.ssm.arn
+  }
 
-  map_users = var.map_users
+  aws_auth_roles = var.map_roles
 
-  worker_groups_launch_template = [
-    for i, v in var.worker_groups : {
+  aws_auth_users = var.map_users
+
+  self_managed_node_groups = {
+    for i, v in var.worker_groups : i => {
       name                 = v.name
       instance_type        = v.instance_type
       ami_id               = data.aws_ami.bottlerocket_ami.id
@@ -53,6 +63,13 @@ module "eks" {
         aws_region               = data.aws_region.current.name
         max_pods                 = v.max_pods
       }
+
+      post_bootstrap_user_data = <<-EOT
+        cd /tmp
+        sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+        sudo systemctl enable amazon-ssm-agent
+        sudo systemctl start amazon-ssm-agent
+      EOT
 
       additional_userdata = templatefile("${path.module}/assets/userdata_additional.toml", {
         name      = v.name
@@ -76,18 +93,16 @@ module "eks" {
 
       market_type = v.market_type
 
-      tags = concat(
+      tags = merge(
         local.default_tags,
-        [
-          {
-            key                 = "k8s.io/cluster-autoscaler/node-template/label/nodepool"
-            value               = v.name
-            propagate_at_launch = true
-          },
-        ]
+        {
+          key                 = "k8s.io/cluster-autoscaler/node-template/label/nodepool"
+          value               = v.name
+          propagate_at_launch = true
+        },
       )
     }
-  ]
+  }
 }
 
 resource "aws_security_group_rule" "ingress" {
@@ -100,5 +115,5 @@ resource "aws_security_group_rule" "ingress" {
   protocol                 = each.value.protocol
   from_port                = each.value.port
   to_port                  = each.value.port
-  security_group_id        = module.eks.worker_security_group_id
+  security_group_id        = module.eks.node_security_group_id
 }
