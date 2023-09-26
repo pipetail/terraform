@@ -8,7 +8,3 @@ data "aws_ami" "bottlerocket_ami" {
     values = ["bottlerocket-aws-k8s-${var.k8s_version}-${var.k8s_architecture}-*"]
   }
 }
-
-data "aws_iam_policy" "ssm" {
-  arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}

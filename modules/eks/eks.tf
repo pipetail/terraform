@@ -37,8 +37,12 @@ module "eks" {
   subnet_ids      = var.control_plane_subnets
   vpc_id          = var.vpc_id
 
-  iam_role_additional_policies = {
-    additional = data.aws_iam_policy.ssm.arn
+  self_managed_node_group_defaults = {
+    iam_role_additional_policies = {
+      ssm = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      // AmazonEBSCSIDriverPolicy is definitely not needed by all nodes, only by csi-driver, it's here just for simplicity (EKS module doesn't support it)
+      csi = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    }
   }
 
   aws_auth_roles = var.map_roles
@@ -46,7 +50,7 @@ module "eks" {
   aws_auth_users = var.map_users
 
   self_managed_node_groups = {
-    for i, v in var.worker_groups : i => {
+    for i, v in var.worker_groups : "nodegroup${i}" => {
       name                 = v.name
       instance_type        = v.instance_type
       ami_id               = data.aws_ami.bottlerocket_ami.id
