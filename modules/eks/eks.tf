@@ -93,11 +93,6 @@ module "eks" {
         nodepool = "main"
       EOT
 
-      additional_userdata = templatefile("${path.module}/assets/userdata_additional.toml", {
-        name      = v.name
-        set_taint = v.set_taint
-      })
-
       target_group_arns = v.target_group_arns
 
       // see https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#ImageDetails:imageId=ami-00b9b96f830a6c28b
