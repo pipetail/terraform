@@ -8,6 +8,7 @@ module "eks" {
 
   k8s_version = "1.27"
 
+  kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
 
   allow_ingress = {

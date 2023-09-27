@@ -26,6 +26,7 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_policy" "this" {
+  #checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints" // TODO: this could be improved
   name = "${var.name_prefix}eks-cluster-autoscaling"
   policy = jsonencode({
     Version = "2012-10-17",

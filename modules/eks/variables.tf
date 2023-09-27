@@ -15,14 +15,26 @@ variable "control_plane_subnets" {
 
 variable "k8s_version" {
   type        = string
-  default     = "1.22"
+  default     = "1.27"
   description = "EKS / Kubernetes version"
+}
+
+variable "k8s_addon_version" {
+  type        = string
+  default     = "1.27"
+  description = "EKS addons version"
 }
 
 variable "k8s_architecture" {
   type        = string
   default     = "x86_64"
   description = "cpu architecture to use with k8s nodes"
+}
+
+variable "kms_key_administrators" {
+  type        = list(string)
+  default     = []
+  description = "KMS key administrators"
 }
 
 variable "worker_groups" {

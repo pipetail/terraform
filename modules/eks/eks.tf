@@ -7,25 +7,38 @@ locals {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.15.1"
+  version = "19.16.0"
 
   cluster_endpoint_public_access = true
 
   cluster_addons = {
     coredns = {
-      most_recent = true
+      addon_version = data.aws_eks_addon_version.coredns.version
+
+      timeouts = {
+        create = "25m"
+        delete = "10m"
+      }
     }
     kube-proxy = {
-      most_recent = true
+      addon_version = data.aws_eks_addon_version.kube_proxy.version
     }
     vpc-cni = {
-      most_recent = true
+      addon_version = data.aws_eks_addon_version.vpc_cni.version
+    }
+    aws-ebs-csi-driver = {
+      addon_version     = data.aws_eks_addon_version.ebs_csi_driver.version
+      resolve_conflicts = "OVERWRITE"
     }
   }
 
   # Self managed node groups will not automatically create the aws-auth configmap so we need to
   create_aws_auth_configmap = true
   manage_aws_auth_configmap = true
+
+  kms_key_enable_default_policy = true
+  kms_key_administrators        = var.kms_key_administrators
+
 
   cluster_encryption_config = {
     resources        = ["secrets"]
@@ -46,33 +59,38 @@ module "eks" {
   }
 
   aws_auth_roles = var.map_roles
-
   aws_auth_users = var.map_users
 
   self_managed_node_groups = {
     for i, v in var.worker_groups : "nodegroup${i}" => {
-      name                 = v.name
-      instance_type        = v.instance_type
-      ami_id               = data.aws_ami.bottlerocket_ami.id
+      name          = v.name
+      instance_type = v.instance_type
+
+      platform = "bottlerocket"
+      ami_id   = data.aws_ami.bottlerocket_ami.id
+
       asg_min_size         = v.asg_min_size
       asg_max_size         = v.asg_max_size
       asg_desired_capacity = v.asg_min_size
       subnets              = v.subnets
 
-      // userdata for the bottlerocket
-      userdata_template_file = "${path.module}/assets/userdata.toml"
-      userdata_template_extra_args = {
-        enable_admin_container   = true
-        enable_control_container = true
-        aws_region               = data.aws_region.current.name
-        max_pods                 = v.max_pods
-      }
+      bootstrap_extra_args = <<-EOT
+        [settings.host-containers.admin]
+        enabled = false
 
-      post_bootstrap_user_data = <<-EOT
-        cd /tmp
-        sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-        sudo systemctl enable amazon-ssm-agent
-        sudo systemctl start amazon-ssm-agent
+        [settings.host-containers.control]
+        enabled = true
+
+        # extra args added
+        [settings.kernel]
+        lockdown = "integrity"
+
+        [settings.kernel.sysctl]
+        "net.ipv6.conf.all.disable_ipv6" = "1"
+        "net.ipv6.conf.default.disable_ipv6" = "1"
+
+        [settings.kubernetes.node-labels]
+        nodepool = "main"
       EOT
 
       additional_userdata = templatefile("${path.module}/assets/userdata_additional.toml", {
