@@ -9,6 +9,11 @@ variable "name_prefix" {
   description = "name prefix to be used for unique resource names"
 }
 
+variable "dns_zone_suffix" {
+  description = "DNS zone suffix to be used for DNS records"
+  type        = string
+}
+
 variable "vpc_cidr" {
   description = "VPC CIDR"
   type        = string

@@ -239,10 +239,9 @@ module "loki_storage" {
   version = "3.14.0"
 
   bucket = "${var.name_prefix}-loki-data"
-  acl    = "private"
 
   control_object_ownership = true
-  object_ownership         = "BucketOwnerPreferred"
+  object_ownership         = "BucketOwnerEnforced"
 
   server_side_encryption_configuration = {
     rule = {

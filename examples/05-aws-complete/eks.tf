@@ -6,31 +6,34 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
+  k8s_version = "1.27"
+
+  kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
 
-  #   allow_ingress = {
-  #     "http" = {
-  #       source_security_group_id = module.sg_alb.security_group_id
-  #       port                     = local.nginx_ingress_ports["http"]
-  #       protocol                 = "tcp"
-  #     },
+  allow_ingress = {
+    "http" = {
+      source_security_group_id = module.sg_alb.security_group_id
+      port                     = local.nginx_ingress_ports["http"]
+      protocol                 = "tcp"
+    },
 
-  #     "https" = {
-  #       source_security_group_id = module.sg_alb.security_group_id
-  #       port                     = local.nginx_ingress_ports["https"]
-  #       protocol                 = "tcp"
-  #     },
-  #  }
+    "https" = {
+      source_security_group_id = module.sg_alb.security_group_id
+      port                     = local.nginx_ingress_ports["https"]
+      protocol                 = "tcp"
+    },
+  }
 
   worker_groups = [
     {
-      name          = "main"
+      name          = "mainpool"
       instance_type = "m5a.large"
       asg_max_size  = 6
       asg_min_size  = 1
       subnets       = module.vpc.private_subnets
 
-      target_group_arns = [] // [aws_alb_target_group.nginx_ingress.arn]
+      target_group_arns = [aws_alb_target_group.nginx_ingress.arn]
 
       set_taint   = false
       max_pods    = 17

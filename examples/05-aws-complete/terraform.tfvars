@@ -1,5 +1,6 @@
-region      = "eu-west-1"
-name_prefix = "complete-example"
+region          = "eu-west-1"
+name_prefix     = "complete-example"
+dns_zone_suffix = "terraform.pipetail.cloud"
 
 vpc_cidr = "10.0.0.0/16"
 subnets = {
