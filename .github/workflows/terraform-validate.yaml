@@ -14,7 +14,7 @@ jobs:
     name: Check terraform file format
     steps:
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Terraform fmt
         uses: dflook/terraform-fmt-check@e2336a7181cca8d4f659f5821e76b917214f322a # v1
