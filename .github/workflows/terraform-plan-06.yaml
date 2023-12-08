@@ -34,6 +34,6 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform plan
-        uses: dflook/terraform-plan@565c93ef17640e3cee13fb9148793db3697dd412 # v1
+        uses: dflook/terraform-plan@d3cfbccf539e67b94a8a7c7e9f7d6bec5a627dd6 # v1
         with:
           path: examples/06-minimal-aws-terraform-bootstrap
