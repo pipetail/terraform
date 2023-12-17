@@ -86,6 +86,7 @@ module "elb_logs" {
 
 resource "aws_alb" "nginx_ingress" {
   #checkov:skip=CKV2_AWS_28: do we need WAF? TODO!
+  #checkov:skip=CKV_AWS_150: "Ensure that Load Balancer has deletion protection enabled": we don't want this here because we want to be able to destroy the whole stack
   name               = "nginx-ingress"
   internal           = false
   load_balancer_type = "application"
@@ -98,7 +99,7 @@ resource "aws_alb" "nginx_ingress" {
     enabled = true
   }
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false // you probably want this to be `true`
 
   drop_invalid_header_fields = true
 }

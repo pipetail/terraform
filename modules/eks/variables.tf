@@ -46,7 +46,6 @@ variable "worker_groups" {
     target_group_arns = list(string)
     subnets           = list(string)
     set_taint         = bool // automatically add a taint with the nodepool name
-    max_pods          = number
     market_type       = string
   }))
   description = "k8s worker groups configuration"

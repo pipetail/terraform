@@ -36,7 +36,6 @@ module "eks" {
       target_group_arns = [aws_alb_target_group.nginx_ingress.arn]
 
       set_taint   = false
-      max_pods    = 17
       market_type = null
     }
   ]

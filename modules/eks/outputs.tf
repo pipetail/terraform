@@ -10,7 +10,12 @@ output "oidc_provider_arn" {
 
 output "cluster_oidc_issuer_url" {
   value       = module.eks.cluster_oidc_issuer_url
-  description = "EKS OIDC issues url"
+  description = "EKS OIDC issuer url"
+}
+
+output "oidc_provider" {
+  value       = module.eks.oidc_provider
+  description = "EKS OIDC issuer id"
 }
 
 output "worker_security_group_id" {
