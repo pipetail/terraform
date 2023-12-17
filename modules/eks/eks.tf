@@ -14,7 +14,6 @@ module "eks" {
   cluster_addons = {
     coredns = {
       addon_version = data.aws_eks_addon_version.coredns.version
-
       timeouts = {
         create = "25m"
         delete = "10m"
@@ -25,6 +24,7 @@ module "eks" {
     }
     vpc-cni = {
       addon_version = data.aws_eks_addon_version.vpc_cni.version
+      #service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
     aws-ebs-csi-driver = {
       addon_version     = data.aws_eks_addon_version.ebs_csi_driver.version
@@ -66,13 +66,16 @@ module "eks" {
       name          = v.name
       instance_type = v.instance_type
 
+      iam_role_attach_cni_policy = true
+
       platform = "bottlerocket"
       ami_id   = data.aws_ami.bottlerocket_ami.id
 
-      asg_min_size         = v.asg_min_size
-      asg_max_size         = v.asg_max_size
-      asg_desired_capacity = v.asg_min_size
-      subnets              = v.subnets
+      min_size     = v.asg_min_size
+      max_size     = v.asg_max_size
+      desired_size = v.asg_min_size
+
+      subnets = v.subnets
 
       bootstrap_extra_args = <<-EOT
         [settings.host-containers.admin]
@@ -122,6 +125,23 @@ module "eks" {
   }
 }
 
+# TODO:
+# module "vpc_cni_irsa" {
+#   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+#   version = "~> 5.0"
+
+#   role_name_prefix      = "VPC-CNI-IRSA"
+#   attach_vpc_cni_policy = true
+#   #vpc_cni_enable_ipv6   = true
+
+#   oidc_providers = {
+#     main = {
+#       provider_arn               = module.eks.oidc_provider_arn
+#       namespace_service_accounts = ["kube-system:aws-node"]
+#     }
+#   }
+# }
+
 resource "aws_security_group_rule" "ingress" {
   for_each = var.allow_ingress
 
@@ -132,5 +152,17 @@ resource "aws_security_group_rule" "ingress" {
   protocol                 = each.value.protocol
   from_port                = each.value.port
   to_port                  = each.value.port
+  security_group_id        = module.eks.node_security_group_id
+}
+
+# this needs to be configured for properly working NodePorts
+resource "aws_security_group_rule" "eks_workers_to_eks_workers_all" {
+  type        = "ingress"
+  description = "EKS between workers all traffic"
+
+  to_port                  = 0
+  protocol                 = "-1"
+  source_security_group_id = module.eks.node_security_group_id
+  from_port                = 0
   security_group_id        = module.eks.node_security_group_id
 }

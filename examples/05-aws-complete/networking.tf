@@ -5,10 +5,10 @@ module "vpc" {
   name = "${var.name_prefix}-main-vpc"
   cidr = var.vpc_cidr
 
-  enable_nat_gateway = false
-  single_nat_gateway = false
+  enable_nat_gateway = true
+  single_nat_gateway = true
 
-  azs                          = ["${var.region}a", "${var.region}b"] #FIXME: Only 2 hardcoded regions
+  azs                          = ["${var.region}a", "${var.region}b"]
   public_subnets               = var.subnets.public
   elasticache_subnets          = var.subnets.elasticache
   private_subnets              = var.subnets.private
@@ -32,8 +32,8 @@ module "sg_vpc_endpoints" {
     protocol    = -1
     cidr_blocks = "0.0.0.0/0"
     description = "Allow traffic to endpoint from VPC"
-
   }]
+
   egress_with_cidr_blocks = [{
     from_port   = 0
     to_port     = 0
@@ -57,16 +57,6 @@ module "vpc_endpoints" {
       service         = "s3"
       service_type    = "Gateway"
       route_table_ids = module.vpc.private_route_table_ids
-    },
-    ecr_api = {
-      service             = "ecr.api"
-      subnet_ids          = module.vpc.private_subnets
-      private_dns_enabled = true
-    },
-    ecr_dkr = {
-      service             = "ecr.dkr"
-      subnet_ids          = module.vpc.private_subnets
-      private_dns_enabled = true
     },
   }
 }
