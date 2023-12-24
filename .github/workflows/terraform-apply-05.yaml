@@ -35,7 +35,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@01846e8467d6fa73653c0ea8ac1ad2231a61d83e # v1
+        uses: dflook/terraform-apply@61d32f33d4290ac22d21e1e546f9b44ccd776240 # v1
         with:
           path: examples/05-aws-complete
 
