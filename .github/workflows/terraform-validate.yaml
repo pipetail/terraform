@@ -17,6 +17,6 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Terraform fmt
-        uses: dflook/terraform-fmt-check@09f625dbd8d30cdb8c989b8231957753b84720ca # v1
+        uses: dflook/terraform-fmt-check@7479f13fe41d17d9b642c290ee702cfdad2e87e8 # v1
         with:
           path: /
