@@ -1,26 +1,22 @@
 # // roles and identity providers for GitHub Actions
-# module "github_oidc" {
-#   source = "../../modules/github-oidc"
-
-#   # you can easily do `repository_name = "pipetail/terraform-*"` to match all repos that start with `terraform-` prefix
-#   repository_name = "pipetail/terraform"
-
-#   # you can use Managed Policy Arns to attach to the created role
-#   managed_policy_arns = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"]
-# }
-
-// roles and identity providers for GitHub Actions
 module "github_oidc_custom_policy" {
   source = "../../modules/github-oidc"
 
-  repository_name = "pipetail/terraform"
-
-  # we don't use managed_policy_arns here to specify a custom policy
+  roles = {
+    github_actions_deployer = {
+      repository_name = "pipetail/terraform"
+      # we don't use managed_policy_arns here to specify a custom policy later on (see below)
+    }
+    github_actions_terraform = {
+      repository_name     = "pipetail/terraform-*"
+      managed_policy_arns = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_push_to_ecr" {
   name   = "github-actions-push-to-ecr"
-  role   = module.github_oidc_custom_policy.role_name
+  role   = module.github_oidc_custom_policy.roles["github_actions_deployer"].name
   policy = data.aws_iam_policy_document.ecr_push_only.json
 }
 
