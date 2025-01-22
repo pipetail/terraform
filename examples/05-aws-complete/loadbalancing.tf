@@ -127,10 +127,9 @@ resource "aws_alb_listener" "https" {
   certificate_arn   = module.certificate.certificate_arn
 
   // Standard SSL policy on AWS ELB is too permissive and does not comply with Forward Secrecy.
-  // That is why we use `ELBSecurityPolicy-FS-1-2-2019-08` SSL policy which is the most permissive policy that supports
   // [Forward Secrecy](https://aws.amazon.com/about-aws/whats-new/2019/10/application-load-balancer-and-network-load-balancer-add-new-security-policies-for-forward-secrecy-with-more-strigent-protocols-and-ciphers/).
   // Complete list of TLS protocols and ciphers supported by that policy can be found on [AWS documentation page](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/create-tls-listener.html).
-  ssl_policy = "ELBSecurityPolicy-FS-1-2-2019-08"
+  ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 
   #   default_action {
   #     type             = "forward"
