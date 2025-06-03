@@ -37,6 +37,7 @@ module "terraform_state" {
 resource "aws_dynamodb_table" "terraform_state_lock" {
   #checkov:skip=CKV_AWS_28: The terraform state lock is meant to be ephemeral and does not need recovery
   #checkov:skip=CKV_AWS_119: The terraform state lock does not hold any sensitive data
+  count        = var.create_dynamodb_table ? 1 : 0
   name         = var.dynamodb_table_name
   hash_key     = "LockID"
   billing_mode = "PAY_PER_REQUEST"
