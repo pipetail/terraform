@@ -41,3 +41,9 @@ variable "dynamodb_point_in_time_recovery" {
   default     = false
   description = "Point-in-time recovery options"
 }
+
+variable "create_dynamodb_table" {
+  type        = bool
+  default     = true
+  description = "Create DynamoDB table for Terraform state locking"
+}
