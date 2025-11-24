@@ -46,6 +46,11 @@ resource "aws_iam_role" "github_actions" {
       }
     ]
   })
+}
 
-  managed_policy_arns = var.managed_policy_arns
+resource "aws_iam_role_policy_attachment" "github_actions" {
+  for_each = toset(var.managed_policy_arns)
+
+  role       = aws_iam_role.github_actions.name
+  policy_arn = each.value
 }
