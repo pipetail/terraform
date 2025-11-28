@@ -32,7 +32,7 @@ jobs:
           service_account: 'github-actions@pipetail-terraform.iam.gserviceaccount.com'
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@246b817d35a57d998b824b632db06d3aa3051413 # v1
+        uses: dflook/terraform-apply@8f47d0ad9f3cb9e50fd6b3595c0cb98f00c518df # v2
         with:
           path: examples/02-minimal-gcp-tf-bootstrap
           auto_approve: true
