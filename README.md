@@ -27,17 +27,24 @@ pre-commit install
 
 The configuration is directly in [.pre-commit-config.yaml](.pre-commit-config.yaml) file. It mainly ensures the following:
 
-- terraform & shell code formatting
-- terraform docs generating
-- terraform validation
-- terraform linting for security compliance, etc.
-- avoids commiting merge-conflicts by mistake
-- convention for end-of-files (empty line at each of every file)
-- deletes trailing whitespaces at end of lines
-- pretty json & yaml formatting
-- avoids commiting private keys in git
-- avoids commiting large files in git
-- etc.
+- `terraform_fmt` - terraform code formatting
+- `terraform_docs` - auto-generated module documentation
+- `terraform_validate` - terraform syntax validation
+- `terraform_tflint` - terraform linting with custom rules
+- `terraform_checkov` - security and compliance scanning
+- `shellcheck` / `shfmt` - shell script linting and formatting
+- `packer_fmt` - packer file formatting
+- `check-merge-conflict` - avoids commiting merge-conflicts by mistake
+- `end-of-file-fixer` - convention for end-of-files (empty line at end of every file)
+- `trailing-whitespace` - deletes trailing whitespaces at end of lines
+- `check-yaml` - validates YAML syntax
+- `pretty-format-json` - consistent JSON formatting
+- `detect-private-key` - avoids commiting private keys in git
+- `check-added-large-files` - avoids commiting large files (>4MB) in git
+- `check-case-conflict` - catches filename case conflicts across platforms
+- `check-executables-have-shebangs` / `check-shebang-scripts-are-executable` - script permission sanity
+- `no-commit-to-branch` - prevents accidental direct commits to `master` and `main`
+- `check-github-actions` / `check-github-workflows` - validates GitHub Actions workflow schema
 
 It is possible to manually run all checks on all files using
 ```
