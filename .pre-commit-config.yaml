@@ -1,7 +1,7 @@
 fail_fast: false
 repos:
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.77.3
+    rev: v1.105.0
     hooks:
       - id: terraform_fmt
       - id: terraform_docs
@@ -17,17 +17,17 @@ repos:
           - --args=--skip-framework=cloudformation
 
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.21
+    rev: v0.1.30
     hooks:
       - id: shellcheck
 
   - repo: https://github.com/cisagov/pre-commit-packer
-    rev: v0.0.2
+    rev: v0.3.1
     hooks:
       - id: packer_fmt
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-merge-conflict
       - id: end-of-file-fixer
@@ -36,6 +36,7 @@ repos:
         exclude_types: [svg]
         args:
           - --markdown-linebreak-ext=md
+      - id: check-yaml
       - id: pretty-format-json
         args:
           - --autofix
@@ -46,6 +47,8 @@ repos:
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
+      - id: no-commit-to-branch
+        args: ["--branch", "master", "--branch", "main"]
 
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
@@ -54,7 +57,7 @@ repos:
         args: ["-l", "-i", "2", "-ci", "-sr", "-w"]
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.22.0
+    rev: 0.36.1
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
