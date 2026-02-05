@@ -108,6 +108,8 @@ There are several GitHub Actions workflows:
 - `terraform-apply-*.yaml` - to `terraform apply` all approved plans from PRs (approved == merged PR)
 - `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
 
+All GitHub Actions are pinned to full commit digests (not tags) for supply chain security. Tool versions in CI workflows are explicitly pinned for reproducibility.
+
 ## tflint
 
 ## checkov

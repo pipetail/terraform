@@ -48,6 +48,6 @@ jobs:
           retention-days: 30
 
       - name: Terraform destroy
-        uses: dflook/terraform-destroy@main
+        uses: dflook/terraform-destroy@b198834c4a4dd959f26649f2a9d24c59e9c9f205 # v2
         with:
           path: examples/05-aws-complete
