@@ -37,6 +37,6 @@ jobs:
 
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@246b817d35a57d998b824b632db06d3aa3051413 # v1
+        uses: dflook/terraform-apply@5489b988934a50bf1489d5b7c5253b46520a7dca # v2
         with:
           path: examples/02-minimal-gcp-tf-bootstrap
