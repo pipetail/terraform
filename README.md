@@ -88,7 +88,14 @@ We use renovate to manage all our dependencies.
 Since we prefer pinning our dependencies to certain versions (as opposed to using something like `:latest`, etc.), we still need an "upgrade strategy". Instead of manually checking for newer versions, changelogs and creating PRs to upgrade each of the dependencies, we have this automated.
 That's where renovate comes into play.
 
-Renovate is configured by [`renovate.json`](./renovate.json), the configuration we use is rather simple.
+Renovate is configured by [`renovate.json`](./renovate.json). Key features of our configuration:
+
+- **GitHub Action digest pinning** for supply chain security
+- **Grouped PRs** - Terraform providers and modules are grouped to reduce PR noise
+- **Automerge** for low-risk updates (provider patch versions, action digest updates)
+- **Custom regex managers** for tracking EKS/Kubernetes versions in Terraform variables
+- **Lock file maintenance** scheduled weekly to keep dependency metadata fresh
+- **Separate major/minor/patch** updates so breaking changes are clearly visible
 
 Renovate scans all files in default branch and looks for dependencies and their versions. It looks through terraform files, Dockerfiles, etc. and when it finds a new version is available for something, it creates a Pull Request with bumping the version, dumps Changelog, etc.
 
