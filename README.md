@@ -122,6 +122,7 @@ There are several GitHub Actions workflows:
 - `packer-build.yaml` - reusable workflow for building AMIs with Packer
 - `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
 - `update-bottlerocket-ami.yaml` - weekly check for new Bottlerocket AMI releases, creates a PR to update the pinned version
+- `scheduled-scale-in.yaml.example` / `scheduled-scale-out.yaml.example` - example workflows for scaling down non-prod resources on evenings/weekends and scaling back up on Monday morning
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
 
@@ -151,6 +152,10 @@ The `packer-build.yaml` is a reusable workflow for building custom AMIs with Pac
 - **Step summary** - outputs the built AMI ID to GitHub Actions summary
 
 Example 04 (WireGuard VPN) uses this pattern via `packer-wireguard-04.yaml`. To add Packer CI for other examples, create a caller workflow that references the reusable workflow with appropriate inputs.
+
+### Scheduled Scale-In / Scale-Out
+
+The `scheduled-scale-in.yaml.example` and `scheduled-scale-out.yaml.example` workflows demonstrate how to reduce non-production costs by scaling down resources on evenings/weekends and scaling back up before business hours. They use targeted `terraform apply` with variable overrides to adjust Aurora reader replica counts (or any other autoscaling target) on a cron schedule. Copy and customize for your environments.
 
 ### Bottlerocket AMI Updates
 
