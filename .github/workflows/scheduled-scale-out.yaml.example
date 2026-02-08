@@ -1,0 +1,43 @@
+---
+name: scheduled-scale-out
+
+permissions:
+  id-token: write      # for fetching the OIDC token
+  contents: read       # for actions/checkout
+  pull-requests: write # For dflook comments on PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Scale up non-production resources on Monday morning (06:00 UTC)
+    - cron: "0 6 * * 1"
+
+jobs:
+  tf-apply:
+    runs-on: ubuntu-latest
+    name: Scale out - restore non-prod resources
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraform
+          aws-region: eu-west-1
+
+      - name: Terraform apply - scale out Aurora readers
+        uses: dflook/terraform-apply@5489b988934a50bf1489d5b7c5253b46520a7dca # v2
+        with:
+          path: examples/05-aws-complete
+          auto_approve: true
+          target: |
+            module.db.aws_appautoscaling_target.this
+          variables: |
+            db_min_replica_count=2
