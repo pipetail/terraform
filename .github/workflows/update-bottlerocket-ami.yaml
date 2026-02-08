@@ -1,0 +1,116 @@
+---
+name: Update Bottlerocket AMI
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-ami:
+    runs-on: ubuntu-latest
+    name: Check for Bottlerocket AMI updates
+    env:
+      K8S_VERSION: "1.27"
+      ARCHITECTURE: "x86_64"
+      TERRAFORM_FILE: examples/05-aws-complete/eks.tf
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsBottlerocketAMI
+          aws-region: eu-west-1
+
+      - name: Get latest Bottlerocket AMI ID
+        id: get-amis
+        run: |
+          SSM_PATH="/aws/service/bottlerocket/aws-k8s-${K8S_VERSION}/${ARCHITECTURE}/latest/image_id"
+
+          LATEST_AMI=$(aws ssm get-parameter \
+            --name "${SSM_PATH}" \
+            --region eu-west-1 \
+            --query "Parameter.Value" \
+            --output text)
+          echo "latest_ami=${LATEST_AMI}" >> "$GITHUB_OUTPUT"
+
+          echo "Latest AMI eu-west-1: ${LATEST_AMI}"
+
+      - name: Get Bottlerocket version from AMI name
+        id: get-version
+        run: |
+          AMI_NAME=$(aws ec2 describe-images \
+            --image-ids "${{ steps.get-amis.outputs.latest_ami }}" \
+            --region eu-west-1 \
+            --query "Images[0].Name" \
+            --output text)
+          VERSION=$(echo "${AMI_NAME}" | grep -oP 'v\d+\.\d+\.\d+')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Bottlerocket version: ${VERSION}"
+
+      - name: Get current AMI ID from Terraform
+        id: current-amis
+        run: |
+          CURRENT_AMI=$(grep -m1 'worker_ami_id' "${TERRAFORM_FILE}" | grep -oP 'ami-[a-z0-9]+')
+          echo "current_ami=${CURRENT_AMI}" >> "$GITHUB_OUTPUT"
+          echo "Current AMI eu-west-1: ${CURRENT_AMI}"
+
+      - name: Check if update is needed
+        id: check-update
+        run: |
+          if [[ "${{ steps.get-amis.outputs.latest_ami }}" == "${{ steps.current-amis.outputs.current_ami }}" ]]; then
+            echo "AMI is already up to date"
+            echo "update_needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "AMI update available"
+            echo "update_needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update AMI ID in Terraform
+        if: steps.check-update.outputs.update_needed == 'true'
+        run: |
+          sed -i "s/${{ steps.current-amis.outputs.current_ami }}/${{ steps.get-amis.outputs.latest_ami }}/" "${TERRAFORM_FILE}"
+          echo "Updated AMI ID in ${TERRAFORM_FILE}"
+          git diff "${TERRAFORM_FILE}"
+
+      - name: Get current Bottlerocket version
+        if: steps.check-update.outputs.update_needed == 'true'
+        id: current-version
+        run: |
+          CURRENT_AMI_NAME=$(aws ec2 describe-images \
+            --image-ids "${{ steps.current-amis.outputs.current_ami }}" \
+            --region eu-west-1 \
+            --query "Images[0].Name" \
+            --output text)
+          CURRENT_VERSION=$(echo "${CURRENT_AMI_NAME}" | grep -oP 'v\d+\.\d+\.\d+')
+          echo "current_version=${CURRENT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Current Bottlerocket version: ${CURRENT_VERSION}"
+
+      - name: Create Pull Request
+        if: steps.check-update.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update Bottlerocket AMI to ${{ steps.get-version.outputs.version }}"
+          branch: update-bottlerocket-ami
+          title: "Update Bottlerocket AMI to ${{ steps.get-version.outputs.version }}"
+          body: |
+            Updates Bottlerocket AMI from ${{ steps.current-version.outputs.current_version }} to ${{ steps.get-version.outputs.version }}.
+
+            | Region | Old AMI | New AMI |
+            |--------|---------|---------|
+            | eu-west-1 | `${{ steps.current-amis.outputs.current_ami }}` | `${{ steps.get-amis.outputs.latest_ami }}` |
+
+            > PRs created with `GITHUB_TOKEN` won't trigger `on: pull_request` workflows automatically.
+            > Close and reopen the PR to trigger the terraform plan.
+          base: master
+          delete-branch: true
