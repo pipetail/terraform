@@ -119,6 +119,8 @@ There are several GitHub Actions workflows:
 - `terraform-lock.yaml` - automatically updates `.terraform.lock.hcl` files for all platforms when provider versions change in PRs
 - `terraform-state-unlock.yaml` - scheduled workflow (daily 2 AM) that detects and removes stale S3 state locks (>4 hours old), also supports manual unlock via workflow_dispatch
 - `terraform-drift-detection.yaml` - scheduled workflow (twice daily at 8 AM and 4 PM UTC) that runs `terraform plan` on all environments to detect configuration drift
+- `packer-build.yaml` - reusable workflow for building AMIs with Packer
+- `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
 
@@ -136,6 +138,18 @@ The workflow uses `terraform plan -detailed-exitcode` where exit code 2 indicate
 3. The issue links to the workflow run for detailed plan output
 
 The workflow can also be triggered manually via `workflow_dispatch` for on-demand drift checks. Tool versions in CI workflows are explicitly pinned for reproducibility.
+
+### Packer Builds
+
+The `packer-build.yaml` is a reusable workflow for building custom AMIs with Packer. It provides:
+
+- **OIDC authentication** for secure AWS access
+- **Validation on PRs** - runs `packer validate` to catch errors before merge
+- **Build on merge** - builds the AMI when changes are pushed to master
+- **Bot commit detection** - skips builds triggered by automated commits to prevent loops
+- **Step summary** - outputs the built AMI ID to GitHub Actions summary
+
+Example 04 (WireGuard VPN) uses this pattern via `packer-wireguard-04.yaml`. To add Packer CI for other examples, create a caller workflow that references the reusable workflow with appropriate inputs.
 
 ## tflint
 
