@@ -1,0 +1,149 @@
+---
+name: terraform-drift-detection
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+on:
+  schedule:
+    - cron: '0 8,16 * * *'
+  workflow_dispatch:
+
+jobs:
+  drift-detection:
+    runs-on: ubuntu-latest
+    name: Terraform Drift Detection
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraformDrift
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555b616edd9a2a4c67 # v3
+        with:
+          terraform_wrapper: false
+
+      - name: Detect drift
+        id: drift
+        run: |
+          declare -A ENVIRONMENTS=(
+            ["01-minimal-aws-cloudformation-bootstrap"]="examples/01-minimal-aws-cloudformation-bootstrap"
+            ["03-aws-github-actions-oidc"]="examples/03-aws-github-actions-oidc"
+            ["04-aws-wireguard-vpn"]="examples/04-aws-wireguard-vpn"
+            ["05-aws-complete"]="examples/05-aws-complete"
+            ["06-minimal-aws-terraform-bootstrap"]="examples/06-minimal-aws-terraform-bootstrap"
+          )
+
+          echo "## Terraform Drift Detection Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Run: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | Status | Details |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------------|--------|---------|" >> "$GITHUB_STEP_SUMMARY"
+
+          DRIFT_DETECTED=false
+          DRIFT_ENVS=""
+
+          for env in "${!ENVIRONMENTS[@]}"; do
+            path="${ENVIRONMENTS[$env]}"
+            echo "::group::Checking $env"
+
+            cd "$path"
+            terraform init -input=false > /dev/null 2>&1
+
+            set +e
+            terraform plan -detailed-exitcode -input=false -no-color > plan_output.txt 2>&1
+            exit_code=$?
+            set -e
+
+            cd - > /dev/null
+
+            case $exit_code in
+              0)
+                echo "| $env | ✅ No changes | Infrastructure matches state |" >> "$GITHUB_STEP_SUMMARY"
+                echo "No drift detected in $env"
+                ;;
+              1)
+                echo "| $env | ❌ Error | Plan failed - check logs |" >> "$GITHUB_STEP_SUMMARY"
+                echo "::error::Plan failed for $env"
+                cat "$path/plan_output.txt"
+                ;;
+              2)
+                echo "| $env | ⚠️ Drift detected | Changes detected outside Terraform |" >> "$GITHUB_STEP_SUMMARY"
+                echo "::warning::Drift detected in $env"
+                DRIFT_DETECTED=true
+                if [ -n "$DRIFT_ENVS" ]; then
+                  DRIFT_ENVS="$DRIFT_ENVS, $env"
+                else
+                  DRIFT_ENVS="$env"
+                fi
+                ;;
+            esac
+
+            rm -f "$path/plan_output.txt"
+            echo "::endgroup::"
+          done
+
+          echo "drift_detected=$DRIFT_DETECTED" >> "$GITHUB_OUTPUT"
+          echo "drift_envs=$DRIFT_ENVS" >> "$GITHUB_OUTPUT"
+
+      - name: Create issue for drift
+        if: steps.drift.outputs.drift_detected == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const title = '⚠️ Terraform Drift Detected';
+            const driftEnvs = '${{ steps.drift.outputs.drift_envs }}';
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+
+            const body = `## Terraform Drift Detected
+
+            Infrastructure drift was detected in the following environments:
+
+            **Affected environments:** ${driftEnvs}
+
+            This means changes were made outside of Terraform (e.g., via AWS Console or CLI) that are not reflected in the Terraform state.
+
+            ### Next Steps
+
+            1. Review the [workflow run](${runUrl}) for details
+            2. Investigate the changes in AWS
+            3. Either:
+               - Update Terraform code to match the current state (if changes should be kept)
+               - Run \`terraform apply\` to revert to the expected state (if changes should be reverted)
+
+            ---
+            *This issue was automatically created by the drift detection workflow.*`;
+
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'terraform-drift'
+            });
+
+            const hasExisting = existingIssues.data.some(issue => issue.title === title);
+
+            if (!hasExisting) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['terraform-drift']
+              });
+              console.log('Created new drift issue');
+            } else {
+              console.log('Drift issue already exists, skipping creation');
+            }
