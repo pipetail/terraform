@@ -1,0 +1,90 @@
+---
+name: packer-build
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Name of the AMI build'
+        required: true
+        type: string
+      packer_directory:
+        description: 'Directory containing Packer files'
+        required: true
+        type: string
+      pkvars_file:
+        description: 'Packer variables file'
+        required: true
+        type: string
+      pkr_file:
+        description: 'Packer template file'
+        required: true
+        type: string
+      aws_region:
+        description: 'AWS region for the build'
+        required: false
+        type: string
+        default: 'eu-west-1'
+    secrets:
+      OIDC_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build ${{ inputs.name }}
+
+    steps:
+      - name: Check if triggered by bot
+        id: check-bot
+        run: |
+          if [[ "${{ github.event.head_commit.author.name }}" == "github-actions[bot]" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping build - triggered by bot commit"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check-bot.outputs.skip != 'true'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Configure AWS credentials
+        if: steps.check-bot.outputs.skip != 'true'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsPackerBuild
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Setup Packer
+        if: steps.check-bot.outputs.skip != 'true'
+        uses: hashicorp/setup-packer@1aa358be5cf73883762b302a3a03abd66e75571a # v3
+
+      - name: Packer Init
+        if: steps.check-bot.outputs.skip != 'true'
+        working-directory: ${{ inputs.packer_directory }}
+        run: packer init ${{ inputs.pkr_file }}
+
+      - name: Packer Validate
+        if: steps.check-bot.outputs.skip != 'true'
+        working-directory: ${{ inputs.packer_directory }}
+        run: packer validate -var-file=${{ inputs.pkvars_file }} ${{ inputs.pkr_file }}
+
+      - name: Packer Build
+        if: steps.check-bot.outputs.skip != 'true'
+        working-directory: ${{ inputs.packer_directory }}
+        run: |
+          packer build -var-file=${{ inputs.pkvars_file }} ${{ inputs.pkr_file }} | tee build_output.txt
+
+          AMI_ID=$(grep -oP 'ami-[a-z0-9]+' build_output.txt | tail -1)
+          echo "AMI_ID=$AMI_ID" >> "$GITHUB_ENV"
+
+          echo "## Packer Build: ${{ inputs.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**AMI ID:** \`$AMI_ID\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Region:** ${{ inputs.aws_region }}" >> "$GITHUB_STEP_SUMMARY"
