@@ -117,6 +117,7 @@ There are several GitHub Actions workflows:
 - `terraform-apply-*.yaml` - to `terraform apply` all approved plans from PRs (approved == merged PR)
 - `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
 - `terraform-lock.yaml` - automatically updates `.terraform.lock.hcl` files for all platforms when provider versions change in PRs
+- `terraform-state-unlock.yaml` - scheduled workflow (daily 2 AM) that detects and removes stale S3 state locks (>4 hours old), also supports manual unlock via workflow_dispatch
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security. Tool versions in CI workflows are explicitly pinned for reproducibility.
 
@@ -142,6 +143,8 @@ terraform {
 ```
 
 The `aws-bootstrap` module still supports creating a DynamoDB table for backwards compatibility via `create_dynamodb_table = true`, but this is no longer the default.
+
+The `terraform-state-unlock.yaml` workflow runs daily to detect and remove stale locks (locks older than 4 hours are considered stale and are automatically removed). Manual unlock is also available via workflow_dispatch for emergency situations.
 
 ## direnv
 .envrc in every folder using includes + correct AWS_PROFILE

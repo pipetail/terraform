@@ -1,0 +1,136 @@
+---
+name: terraform-state-unlock
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to force-unlock'
+        required: true
+        type: choice
+        options:
+          - 01-minimal-aws-cloudformation-bootstrap
+          - 03-aws-github-actions-oidc
+          - 04-aws-wireguard-vpn
+          - 05-aws-complete
+          - 06-minimal-aws-terraform-bootstrap
+
+jobs:
+  auto-unlock:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    name: Auto-unlock stale locks
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraformUnlock
+          aws-region: eu-west-1
+
+      - name: Check and unlock stale locks
+        env:
+          MAX_AGE_SECONDS: 14400
+        run: |
+          declare -A ENVIRONMENTS=(
+            ["01-minimal-aws-cloudformation-bootstrap"]="pipetail-examples-terraform-state:infrastructure.tflock"
+            ["03-aws-github-actions-oidc"]="pipetail-examples-terraform-state:03-aws-github-actions-oidc.tflock"
+            ["04-aws-wireguard-vpn"]="pipetail-examples-terraform-state:04-aws-wireguard-vpn.tflock"
+            ["05-aws-complete"]="pipetail-examples-terraform-state:05-aws-complete.tflock"
+            ["06-minimal-aws-terraform-bootstrap"]="06-minimal-aws-terraform-bootstrap-tf-state-eu-west-1:infrastructure.tflock"
+          )
+
+          echo "## Stale Lock Detection Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | Status | Lock Age | Action |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------------|--------|----------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          for env in "${!ENVIRONMENTS[@]}"; do
+            IFS=':' read -r bucket key <<< "${ENVIRONMENTS[$env]}"
+
+            if ! aws s3api head-object --bucket "$bucket" --key "$key" > /dev/null 2>&1; then
+              echo "| $env | No lock | - | None |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            lock_json=$(aws s3 cp "s3://${bucket}/${key}" -)
+            created=$(echo "$lock_json" | jq -r '.Created // empty')
+
+            if [ -z "$created" ]; then
+              echo "::warning::${env}: Lock exists but has no Created timestamp, removing"
+              aws s3 rm "s3://${bucket}/${key}"
+              echo "| $env | Lock (no timestamp) | unknown | **Removed** |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            lock_epoch=$(date -d "$created" +%s)
+            now_epoch=$(date +%s)
+            age=$(( now_epoch - lock_epoch ))
+            age_hours=$(( age / 3600 ))
+            age_mins=$(( (age % 3600) / 60 ))
+
+            if [ "$age" -gt "$MAX_AGE_SECONDS" ]; then
+              echo "::warning::${env}: Stale lock (${age_hours}h${age_mins}m old), removing"
+              aws s3 rm "s3://${bucket}/${key}"
+              echo "| $env | Stale lock | ${age_hours}h${age_mins}m | **Removed** |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| $env | Active lock | ${age_hours}h${age_mins}m | Kept |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+  manual-unlock:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    name: Manual unlock - ${{ inputs.environment }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsTerraformUnlock
+          aws-region: eu-west-1
+
+      - name: Unlock state
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          declare -A ENVIRONMENTS=(
+            ["01-minimal-aws-cloudformation-bootstrap"]="pipetail-examples-terraform-state:infrastructure.tflock"
+            ["03-aws-github-actions-oidc"]="pipetail-examples-terraform-state:03-aws-github-actions-oidc.tflock"
+            ["04-aws-wireguard-vpn"]="pipetail-examples-terraform-state:04-aws-wireguard-vpn.tflock"
+            ["05-aws-complete"]="pipetail-examples-terraform-state:05-aws-complete.tflock"
+            ["06-minimal-aws-terraform-bootstrap"]="06-minimal-aws-terraform-bootstrap-tf-state-eu-west-1:infrastructure.tflock"
+          )
+
+          IFS=':' read -r BUCKET LOCK_KEY <<< "${ENVIRONMENTS[$ENVIRONMENT]}"
+
+          echo "### Manual Unlock: ${ENVIRONMENT}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if ! aws s3api head-object --bucket "$BUCKET" --key "$LOCK_KEY" > /dev/null 2>&1; then
+            echo "No lock found for ${ENVIRONMENT}, nothing to do."
+            echo "No lock found. State is not locked." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Lock info:"
+          aws s3 cp "s3://${BUCKET}/${LOCK_KEY}" - | jq .
+
+          lock_json=$(aws s3 cp "s3://${BUCKET}/${LOCK_KEY}" -)
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$lock_json" | jq . >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          aws s3 rm "s3://${BUCKET}/${LOCK_KEY}"
+          echo ""
+          echo "Lock removed for ${ENVIRONMENT}."
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Lock removed.**" >> "$GITHUB_STEP_SUMMARY"
