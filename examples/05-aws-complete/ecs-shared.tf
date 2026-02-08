@@ -1,4 +1,5 @@
 resource "aws_cloudwatch_log_group" "command_execution" {
+  #checkov:skip=CKV_AWS_338: Retention is configurable via variable, default is acceptable for example code
   name = "ecs-command-execution"
 
   retention_in_days = var.retention_in_days
@@ -12,6 +13,7 @@ resource "aws_cloudwatch_log_group" "command_execution" {
 // https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
 data "aws_iam_policy_document" "allow_command_exec" {
   #checkov:skip=CKV_AWS_111:We should review this TODO
+  #checkov:skip=CKV_AWS_356:SSM and logs actions require wildcard resources
   statement {
     actions = [
       "ssmmessages:CreateControlChannel",

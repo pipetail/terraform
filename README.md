@@ -122,6 +122,24 @@ All GitHub Actions are pinned to full commit digests (not tags) for supply chain
 ## checkov
 [Checkov]() is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
 
+## State Locking
+We use S3 native locking with `use_lockfile = true` (requires Terraform 1.6+). This eliminates the need for a separate DynamoDB table for state locking.
+
+Example backend configuration:
+```hcl
+terraform {
+  backend "s3" {
+    bucket       = "my-terraform-state"
+    key          = "infrastructure"
+    region       = "eu-west-1"
+    use_lockfile = true
+    encrypt      = true
+  }
+}
+```
+
+The `aws-bootstrap` module still supports creating a DynamoDB table for backwards compatibility via `create_dynamodb_table = true`, but this is no longer the default.
+
 ## direnv
 .envrc in every folder using includes + correct AWS_PROFILE
 

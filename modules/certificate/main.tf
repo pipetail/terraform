@@ -10,6 +10,7 @@ terraform {
 }
 
 resource "aws_acm_certificate" "main" {
+  #checkov:skip=CKV2_AWS_71: Wildcard certificates are intentionally supported
   domain_name       = var.domain_name
   validation_method = "DNS"
 
@@ -21,6 +22,7 @@ resource "aws_acm_certificate" "main" {
 }
 
 resource "aws_acm_certificate" "virginia" {
+  #checkov:skip=CKV2_AWS_71: Wildcard certificates are intentionally supported
   provider          = aws.virginia
   domain_name       = var.domain_name
   validation_method = "DNS"

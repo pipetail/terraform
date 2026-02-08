@@ -25,6 +25,7 @@ locals {
 
 resource "aws_cloudwatch_log_group" "loki" {
   #checkov:skip=CKV_AWS_158: We don't encrypt the log group yet TODO: we should
+  #checkov:skip=CKV_AWS_338: Retention is configurable via variable, default is acceptable for example code
   name = "loki"
 
   retention_in_days = var.retention_in_days
@@ -52,6 +53,7 @@ resource "aws_service_discovery_service" "loki" {
 }
 
 resource "aws_ecs_task_definition" "loki" {
+  #checkov:skip=CKV_AWS_336: Read-only filesystem not configured for this example
   family = "loki_task_definition"
 
   container_definitions = local.loki_container_definitions
@@ -88,6 +90,7 @@ resource "aws_ecs_service" "loki" {
 }
 
 module "sg_loki" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
   version = "4.16.0"
 
@@ -235,6 +238,7 @@ resource "aws_iam_role_policy" "loki_ecs_task_command_exec" {
 }
 
 module "loki_storage" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "3.14.0"
 

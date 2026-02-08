@@ -32,6 +32,7 @@ resource "aws_elasticache_parameter_group" "redis" {
 }
 
 module "sg_redis" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
   version = "4.16.0"
 

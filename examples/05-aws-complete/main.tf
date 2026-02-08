@@ -33,14 +33,14 @@ provider "helm" {
 }
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.6.0"
 
   backend "s3" {
-    bucket         = "pipetail-examples-terraform-state"
-    key            = "05-aws-complete"
-    region         = "eu-west-1"
-    dynamodb_table = "terraform-backend"
-    encrypt        = true
+    bucket       = "pipetail-examples-terraform-state"
+    key          = "05-aws-complete"
+    region       = "eu-west-1"
+    use_lockfile = true
+    encrypt      = true
   }
 
   required_providers {
