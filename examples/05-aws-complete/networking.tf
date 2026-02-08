@@ -1,4 +1,5 @@
 module "vpc" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws"
   version = "3.14.4"
 
@@ -19,6 +20,7 @@ module "vpc" {
 
 # Specific security group for all VPC endpoints
 module "sg_vpc_endpoints" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
   version = "4.16.0"
 
@@ -47,6 +49,7 @@ module "sg_vpc_endpoints" {
 #   ECR - for containers to be able to pull docker images
 #   S3 - for ECR and for bucket manipulation
 module "vpc_endpoints" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "3.18.1"
 

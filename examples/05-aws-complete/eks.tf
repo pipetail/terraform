@@ -84,6 +84,7 @@ resource "aws_iam_role_policy_attachment" "eks_access_administrator_kubeconfig" 
 }
 
 resource "aws_iam_policy" "eks_kubeconfig" {
+  #checkov:skip=CKV_AWS_355:Wildcard is intentional to allow describing all EKS clusters
   name        = "eks_kubeconfig"
   path        = "/"
   description = "allow obtaining of kubeconfig for all EKS clusters"

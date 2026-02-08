@@ -1,6 +1,7 @@
 data "aws_iam_policy_document" "allow_main_kms" {
   #checkov:skip=CKV_AWS_109: The asterisk ("*") identifies the KMS key to which the key policy is attached. https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
   #checkov:skip=CKV_AWS_111: The asterisk ("*") identifies the KMS key to which the key policy is attached. https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
+  #checkov:skip=CKV_AWS_356: The asterisk ("*") identifies the KMS key to which the key policy is attached. https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
 
   statement {
     actions = [

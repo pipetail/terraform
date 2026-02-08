@@ -1,4 +1,5 @@
 module "sg_alb" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
   version = "4.17.2"
 
@@ -35,6 +36,7 @@ module "sg_alb" {
 }
 
 resource "aws_alb_target_group" "nginx_ingress" {
+  #checkov:skip=CKV_AWS_378: HTTP is used between ALB and backend, HTTPS terminates at ALB
   name_prefix = "nginx"
   port        = local.nginx_ingress_ports["http"]
   protocol    = "HTTP"
@@ -52,6 +54,7 @@ resource "aws_alb_target_group" "nginx_ingress" {
 }
 
 module "elb_logs" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "3.10.1"
 

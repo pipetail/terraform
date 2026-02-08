@@ -6,6 +6,7 @@ locals {
 }
 
 module "eks" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/eks/aws"
   version = "19.21.0"
 
