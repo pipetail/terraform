@@ -82,6 +82,8 @@ terraform providers lock  \
   -platform=linux_arm64
 ```
 
+The `terraform-lock.yaml` workflow automatically updates lock files when provider versions change in PRs. It runs `terraform providers lock` for all platforms and commits the updated lock files back to the PR branch.
+
 ## renovate
 We use renovate to manage all our dependencies.
 
@@ -101,7 +103,7 @@ Renovate scans all files in default branch and looks for dependencies and their 
 
 We run all github actions checks to validate, test and `terraform plan` the changes and when it is safe to upgrade, we simply merge the PR.
 
-Note: one additional github action runs to `terraform lock` to sync the terraform lockfile, since renovate doesn't seem do this.
+The `terraform-lock.yaml` workflow automatically updates lock files when Renovate (or any PR) changes provider versions, since Renovate doesn't handle this natively.
 
 ## .gitignore
 This `.gitignore` is a template we use in all our git repos where terraform is used.
@@ -114,6 +116,7 @@ There are several GitHub Actions workflows:
 - `terraform-plan-*.yaml` - to `terraform plan` all folders in PRs
 - `terraform-apply-*.yaml` - to `terraform apply` all approved plans from PRs (approved == merged PR)
 - `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
+- `terraform-lock.yaml` - automatically updates `.terraform.lock.hcl` files for all platforms when provider versions change in PRs
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security. Tool versions in CI workflows are explicitly pinned for reproducibility.
 
