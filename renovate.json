@@ -53,8 +53,8 @@
     {
       "description": "Track EKS Kubernetes version in Terraform variables",
       "customType": "regex",
-      "fileMatch": [
-        "\\.tf$"
+      "managerFilePatterns": [
+        "/\\.tf$/"
       ],
       "matchStrings": [
         "k8s_version\\s*=\\s*\"(?<currentValue>[0-9]+\\.[0-9]+)\""
