@@ -40,7 +40,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Setup Packer
-        uses: hashicorp/setup-packer@1aa358be5cf73883762b302a3a03abd66e75571a # v3
+        uses: hashicorp/setup-packer@1aa358be5cf73883762b302a3a03abd66e75b232 # v3
 
       - name: Packer Init
         working-directory: examples/04-aws-wireguard-vpn/packer
