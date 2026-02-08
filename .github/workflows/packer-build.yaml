@@ -63,7 +63,7 @@ jobs:
 
       - name: Setup Packer
         if: steps.check-bot.outputs.skip != 'true'
-        uses: hashicorp/setup-packer@1aa358be5cf73883762b302a3a03abd66e75571a # v3
+        uses: hashicorp/setup-packer@1aa358be5cf73883762b302a3a03abd66e75b232 # v3
 
       - name: Packer Init
         if: steps.check-bot.outputs.skip != 'true'
