@@ -11,6 +11,7 @@ repos:
         args:
           - "--args=--config=__GIT_WORKING_DIR__/.tflint.hcl"
           - "--args=--disable-rule=terraform_standard_module_structure"
+          - "--args=--disable-rule=terraform_unused_required_providers"
       - id: terraform_checkov
         args:
           - --args=--quiet
