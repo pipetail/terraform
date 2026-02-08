@@ -121,6 +121,7 @@ There are several GitHub Actions workflows:
 - `terraform-drift-detection.yaml` - scheduled workflow (twice daily at 8 AM and 4 PM UTC) that runs `terraform plan` on all environments to detect configuration drift
 - `packer-build.yaml` - reusable workflow for building AMIs with Packer
 - `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
+- `update-bottlerocket-ami.yaml` - weekly check for new Bottlerocket AMI releases, creates a PR to update the pinned version
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
 
@@ -150,6 +151,10 @@ The `packer-build.yaml` is a reusable workflow for building custom AMIs with Pac
 - **Step summary** - outputs the built AMI ID to GitHub Actions summary
 
 Example 04 (WireGuard VPN) uses this pattern via `packer-wireguard-04.yaml`. To add Packer CI for other examples, create a caller workflow that references the reusable workflow with appropriate inputs.
+
+### Bottlerocket AMI Updates
+
+The `update-bottlerocket-ami.yaml` workflow runs weekly (Monday 8 AM UTC) to check for new [Bottlerocket](https://github.com/bottlerocket-os/bottlerocket) AMI releases. It queries the AWS SSM public parameter for the latest AMI ID, compares it against the version pinned in Terraform, and creates a PR with the updated AMI ID when a new version is available. This ensures EKS nodes run on the latest Bottlerocket release with security patches and bug fixes while still going through the standard PR review and terraform plan process.
 
 ## tflint
 
