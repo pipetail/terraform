@@ -1,5 +1,5 @@
-
 module "sg" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.2.0"
 
@@ -25,7 +25,7 @@ module "sg" {
 }
 
 module "ec2_instance" {
-
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 5.0"
 

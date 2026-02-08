@@ -1,4 +1,5 @@
 module "vpc" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.16.0"
 

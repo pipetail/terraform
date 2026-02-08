@@ -3,14 +3,14 @@ provider "aws" {
 }
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.6.0"
 
   backend "s3" {
-    bucket         = "pipetail-examples-terraform-state"
-    key            = "infrastructure"
-    region         = "eu-west-1"
-    dynamodb_table = "terraform-backend"
-    encrypt        = true
+    bucket       = "pipetail-examples-terraform-state"
+    key          = "infrastructure"
+    region       = "eu-west-1"
+    use_lockfile = true
+    encrypt      = true
   }
 
   required_providers {
