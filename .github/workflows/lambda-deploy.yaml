@@ -1,0 +1,94 @@
+---
+name: lambda-deploy
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      lambda_name:
+        description: 'Lambda function name (directory name in src/)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - stage
+          - prod
+      s3_bucket:
+        description: 'S3 bucket for Lambda artifacts'
+        required: true
+        type: string
+      aws_region:
+        description: 'AWS region'
+        required: false
+        type: string
+        default: 'eu-west-1'
+      update_function:
+        description: 'Update Lambda function code after upload'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy ${{ inputs.lambda_name }} to ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: '22'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsLambdaDeploy
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Package Lambda
+        run: |
+          chmod +x scripts/package-lambdas.sh
+          ./scripts/package-lambdas.sh "${{ inputs.lambda_name }}"
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp "src/${{ inputs.lambda_name }}.zip" \
+            "s3://${{ inputs.s3_bucket }}/${{ inputs.environment }}/${{ inputs.lambda_name }}.zip"
+          echo "Uploaded to s3://${{ inputs.s3_bucket }}/${{ inputs.environment }}/${{ inputs.lambda_name }}.zip"
+
+      - name: Update Lambda function code
+        if: inputs.update_function
+        run: |
+          FUNCTION_NAME="${{ inputs.environment }}-${{ inputs.lambda_name }}"
+          if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${{ inputs.aws_region }}" > /dev/null 2>&1; then
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --s3-bucket "${{ inputs.s3_bucket }}" \
+              --s3-key "${{ inputs.environment }}/${{ inputs.lambda_name }}.zip" \
+              --region "${{ inputs.aws_region }}" \
+              --publish
+            echo "Updated Lambda function: $FUNCTION_NAME"
+          else
+            echo "::warning::Lambda function '$FUNCTION_NAME' does not exist yet - run terraform apply first"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Lambda Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Parameter | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lambda | \`${{ inputs.lambda_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | \`${{ inputs.environment }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| S3 Bucket | \`${{ inputs.s3_bucket }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Region | \`${{ inputs.aws_region }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Function Updated | \`${{ inputs.update_function }}\` |" >> "$GITHUB_STEP_SUMMARY"

@@ -123,6 +123,8 @@ There are several GitHub Actions workflows:
 - `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
 - `update-bottlerocket-ami.yaml` - weekly check for new Bottlerocket AMI releases, creates a PR to update the pinned version
 - `scheduled-scale-in.yaml.example` / `scheduled-scale-out.yaml.example` - example workflows for scaling down non-prod resources on evenings/weekends and scaling back up on Monday morning
+- `package-lambdas.yaml` - automatically packages Lambda functions when source code changes in PRs, commits updated zip files back to the branch
+- `lambda-deploy.yaml` - manual workflow dispatch to build, upload, and deploy Lambda functions to S3 and optionally update the function code
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
 
@@ -160,6 +162,14 @@ The `scheduled-scale-in.yaml.example` and `scheduled-scale-out.yaml.example` wor
 ### Bottlerocket AMI Updates
 
 The `update-bottlerocket-ami.yaml` workflow runs weekly (Monday 8 AM UTC) to check for new [Bottlerocket](https://github.com/bottlerocket-os/bottlerocket) AMI releases. It queries the AWS SSM public parameter for the latest AMI ID, compares it against the version pinned in Terraform, and creates a PR with the updated AMI ID when a new version is available. This ensures EKS nodes run on the latest Bottlerocket release with security patches and bug fixes while still going through the standard PR review and terraform plan process.
+
+### Lambda Deployment
+
+Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (or `index.js`) entry point. Two workflows handle the build and deploy lifecycle:
+
+- **`package-lambdas.yaml`** runs automatically on PRs when Lambda source code changes. It uses `scripts/package-lambdas.sh` to create reproducible zip packages (normalized timestamps, deterministic file ordering) and commits the updated `.zip` files back to the PR branch. If the packaging script itself changes, all Lambdas are repackaged.
+
+- **`lambda-deploy.yaml`** is a manual `workflow_dispatch` workflow for deploying a Lambda to a target environment. It packages the function, uploads the zip to an S3 artifacts bucket, and optionally updates the Lambda function code via the AWS CLI. The S3 bucket and region are configurable per invocation.
 
 ## tflint
 
