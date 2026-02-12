@@ -8,7 +8,7 @@ locals {
 module "eks" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.21.0"
+  version = "21.15.1"
 
   cluster_endpoint_public_access = true
 
