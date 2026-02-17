@@ -234,6 +234,20 @@ terraform-docs  markdown . > README.md
 This is useful for some people and takes no effort on our side. We do this manually so far. Automating this and having this in pre-commit would be far better.
 I'm writing this here as a TODO.
 
+## Modules
+
+Reusable Terraform modules in `modules/`:
+
+| Module | Description |
+|--------|-------------|
+| `aws-bootstrap` | S3 backend + optional DynamoDB table for state management |
+| `certificate` | ACM certificate with DNS validation |
+| `cluster-autoscaler` | Kubernetes Cluster Autoscaler with IRSA |
+| `eks` | EKS cluster with managed/self-managed node groups |
+| `github-oidc` | GitHub Actions OIDC provider + IAM role |
+| `kms` | Shared KMS key with key rotation, CloudWatch Logs and CloudTrail encryption |
+| `wireguard-ec2` | WireGuard VPN on EC2 with Packer AMI |
+
 ## naming conventions
 Basically just [this](https://www.terraform-best-practices.com/naming)
 
