@@ -33,27 +33,27 @@ moved {
 # --- moved: extracting a resource into a module ---
 
 moved {
-  from = aws_cloudtrail.main
+  from = aws_cloudtrail.audit
   to   = module.cloudtrail.aws_cloudtrail.main
 }
 
 moved {
-  from = aws_kms_key.main
-  to   = module.kms.aws_kms_key.main
+  from = aws_kms_key.encryption
+  to   = aws_kms_key.main
 }
 
 # --- moved: for_each key rename ---
 
 moved {
-  from = aws_route53_record.api["A"]
-  to   = aws_route53_record.api["a"]
+  from = aws_route53_record.dns["A"]
+  to   = aws_route53_record.dns["a"]
 }
 
 # --- moved: count to for_each ---
 
 moved {
-  from = module.eks.module.eks.aws_security_group_rule.default_ingress[0]
-  to   = module.eks.module.eks.aws_security_group_rule.this["https_ingress"]
+  from = aws_elasticache_replication_group.cache[0]
+  to   = aws_elasticache_replication_group.redis
 }
 
 # --- import: bring existing resources under Terraform management ---
