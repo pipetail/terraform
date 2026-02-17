@@ -172,9 +172,10 @@ Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (o
 - **`lambda-deploy.yaml`** is a manual `workflow_dispatch` workflow for deploying a Lambda to a target environment. It packages the function, uploads the zip to an S3 artifacts bucket, and optionally updates the Lambda function code via the AWS CLI. The S3 bucket and region are configurable per invocation.
 
 ## tflint
+[tflint](https://github.com/terraform-linters/tflint) is a pluggable linter for Terraform. We use the `tflint-ruleset-aws` plugin to catch AWS-specific issues (invalid instance types, missing tags, deprecated resources) before they reach `terraform plan`. Configuration is in `.tflint.hcl` files per environment.
 
 ## checkov
-[Checkov]() is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
+[Checkov](https://www.checkov.io) is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
 
 ## VPC Flow Logs
 
@@ -242,6 +243,7 @@ Reusable Terraform modules in `modules/`:
 |--------|-------------|
 | `aws-bootstrap` | S3 backend + optional DynamoDB table for state management |
 | `certificate` | ACM certificate with DNS validation |
+| `cloudtrail` | Multi-region CloudTrail with S3 storage, CloudWatch Logs, KMS encryption, and lifecycle rules |
 | `cluster-autoscaler` | Kubernetes Cluster Autoscaler with IRSA |
 | `eks` | EKS cluster with managed/self-managed node groups |
 | `github-oidc` | GitHub Actions OIDC provider + IAM role |
