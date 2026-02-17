@@ -27,7 +27,7 @@ module "sg" {
 module "ec2_instance" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   create = var.create_instance
 
