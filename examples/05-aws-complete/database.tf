@@ -18,7 +18,7 @@ module "db" {
   instance_class = "db.r6g.large"
   instances = {
     one = {}
-    two = { promotion_tier = 2 }
+    two = { promotion_tier = 2 } // higher tier = lower failover priority, used as read replica
   }
 
   manage_master_user_password = false
@@ -50,13 +50,6 @@ module "db" {
   allow_major_version_upgrade = false
   auto_minor_version_upgrade  = false
   apply_immediately           = false
-
-  // serverlessv2 is not used but this is workaround for not causing drift
-  // see https://github.com/hashicorp/terraform-provider-aws/issues/32381
-  serverlessv2_scaling_configuration = {
-    min_capacity = 0.5
-    max_capacity = 1
-  }
 }
 
 resource "aws_rds_cluster_parameter_group" "main" {
