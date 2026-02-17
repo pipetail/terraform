@@ -16,6 +16,14 @@ module "vpc" {
   database_subnets             = var.subnets.database
   create_database_subnet_group = true
   enable_dns_hostnames         = true
+
+  enable_flow_log                                 = true
+  create_flow_log_cloudwatch_log_group            = true
+  create_flow_log_cloudwatch_iam_role             = true
+  flow_log_max_aggregation_interval               = 60
+  flow_log_cloudwatch_log_group_name_prefix       = "/aws/vpc-flow-logs/"
+  flow_log_cloudwatch_log_group_retention_in_days = 90
+  flow_log_cloudwatch_log_group_kms_key_id        = aws_kms_key.main.arn
 }
 
 # Specific security group for all VPC endpoints

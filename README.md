@@ -176,6 +176,10 @@ Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (o
 ## checkov
 [Checkov]() is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
 
+## VPC Flow Logs
+
+VPC Flow Logs capture network traffic metadata for security analysis, troubleshooting, and compliance. Example 05 enables flow logs using the VPC module's built-in support, sending logs to CloudWatch Logs with KMS encryption and 90-day retention. See `examples/05-aws-complete/networking.tf`.
+
 ## State Locking
 We use S3 native locking with `use_lockfile = true` (requires Terraform 1.6+). This eliminates the need for a separate DynamoDB table for state locking.
 

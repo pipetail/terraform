@@ -124,6 +124,7 @@ resource "aws_alb_listener" "nginx_ingress" {
 }
 
 resource "aws_alb_listener" "https" {
+  #checkov:skip=CKV_AWS_103:ELBSecurityPolicy-TLS13-1-2-2021-06 enforces TLS 1.2+ (false positive)
   load_balancer_arn = aws_alb.nginx_ingress.arn
   port              = 443
   protocol          = "HTTPS"
