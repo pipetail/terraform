@@ -177,6 +177,10 @@ Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (o
 ## checkov
 [Checkov](https://www.checkov.io) is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
 
+## Managed Databases
+
+Example 05 shows production-grade Aurora PostgreSQL using the community `terraform-aws-modules/rds-aurora/aws` module with KMS encryption, Performance Insights, CloudWatch log exports, 35-day backup retention, and S3 lifecycle tiering. See `examples/05-aws-complete/database.tf`.
+
 ## VPC Flow Logs
 
 VPC Flow Logs capture network traffic metadata for security analysis, troubleshooting, and compliance. Example 05 enables flow logs using the VPC module's built-in support, sending logs to CloudWatch Logs with KMS encryption and 90-day retention. See `examples/05-aws-complete/networking.tf`.

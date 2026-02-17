@@ -1,7 +1,7 @@
 module "sg_alb" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "4.17.2"
+  version = "5.3.1"
 
   name        = "alb"
   description = "SG for Appplication balancer - HTTP allowed"
@@ -56,7 +56,7 @@ resource "aws_alb_target_group" "nginx_ingress" {
 module "elb_logs" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.10.1"
+  version = "4.11.0"
 
   bucket = "${var.name_prefix}-elb-logs"
   acl    = "log-delivery-write"
