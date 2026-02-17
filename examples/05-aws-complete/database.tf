@@ -46,7 +46,12 @@ module "db" {
   preferred_backup_window      = "03:00-05:00"
   preferred_maintenance_window = "sun:05:00-sun:06:00"
 
-  deletion_protection         = false // you probably want this to be `true` in production
+  autoscaling_enabled      = true
+  autoscaling_min_capacity = 1
+  autoscaling_max_capacity = 3
+  autoscaling_target_cpu   = 55
+
+  deletion_protection         = true
   allow_major_version_upgrade = false
   auto_minor_version_upgrade  = false
   apply_immediately           = false
