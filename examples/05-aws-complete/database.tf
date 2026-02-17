@@ -65,4 +65,61 @@ resource "aws_rds_cluster_parameter_group" "main" {
     name  = "track_activities"
     value = "1"
   }
+
+  // auto_explain logs execution plans for slow queries (>1s) — invaluable for debugging
+  parameter {
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements,auto_explain"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name  = "auto_explain.log_format"
+    value = "json"
+  }
+
+  parameter {
+    name  = "auto_explain.log_min_duration"
+    value = "1000"
+  }
+
+  parameter {
+    name  = "auto_explain.log_analyze"
+    value = "1"
+  }
+
+  parameter {
+    name  = "auto_explain.log_buffers"
+    value = "1"
+  }
+
+  parameter {
+    name  = "auto_explain.log_verbose"
+    value = "1"
+  }
+
+  parameter {
+    name  = "auto_explain.log_nested_statements"
+    value = "1"
+  }
+
+  parameter {
+    name  = "auto_explain.sample_rate"
+    value = "1"
+  }
+
+  // Aurora-specific: cluster cache management preserves buffer cache across failovers
+  // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.cluster-cache-mgmt.html
+  parameter {
+    name  = "apg_ccm_enabled"
+    value = "1"
+  }
+
+  // Aurora query plan management — stabilizes execution plans across engine upgrades
+  // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Optimize.overview.html
+  parameter {
+    name         = "rds.enable_plan_management"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
 }
