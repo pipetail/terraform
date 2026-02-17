@@ -92,7 +92,7 @@ resource "aws_ecs_service" "loki" {
 module "sg_loki" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "4.16.0"
+  version = "5.3.1"
 
   name        = "loki"
   description = "Security group for grafana loki ECS"
@@ -240,7 +240,7 @@ resource "aws_iam_role_policy" "loki_ecs_task_command_exec" {
 module "loki_storage" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.14.0"
+  version = "4.11.0"
 
   bucket = "${var.name_prefix}-loki-data"
 
