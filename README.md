@@ -196,6 +196,18 @@ The `aws-bootstrap` module still supports creating a DynamoDB table for backward
 
 The `terraform-state-unlock.yaml` workflow runs daily to detect and remove stale locks (locks older than 4 hours are considered stale and are automatically removed). Manual unlock is also available via workflow_dispatch for emergency situations.
 
+## State Migrations
+
+We use a dedicated `migrations.tf` file per workspace for all state migrations (`moved {}`, `import {}`, `removed {}` blocks). This replaces manual `terraform state mv` and `terraform import` commands, which are error-prone and not reviewable in PRs.
+
+Benefits:
+- Migrations are **versioned in git** and go through the normal PR review process
+- They are **applied automatically** during `terraform apply` — no manual steps
+- Applied `moved` blocks are harmless no-ops and serve as a **refactoring history**
+- `import` blocks can be removed after they have been applied to all environments
+
+See `examples/05-aws-complete/migrations.tf` for patterns including resource renames, module extractions, `for_each` key changes, and resource type upgrades.
+
 ## direnv
 .envrc in every folder using includes + correct AWS_PROFILE
 
