@@ -45,6 +45,9 @@ The configuration is directly in [.pre-commit-config.yaml](.pre-commit-config.ya
 - `check-executables-have-shebangs` / `check-shebang-scripts-are-executable` - script permission sanity
 - `no-commit-to-branch` - prevents accidental direct commits to `master` and `main`
 - `check-github-actions` / `check-github-workflows` - validates GitHub Actions workflow schema
+- `opa-fmt` - OPA/Rego policy file formatting
+- `conftest-verify` - runs unit tests for custom Conftest policies
+- `conftest-terraform` - validates Terraform files against custom OPA policies
 
 It is possible to manually run all checks on all files using
 ```
@@ -176,6 +179,97 @@ Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (o
 
 ## checkov
 [Checkov](https://www.checkov.io) is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
+
+## Conftest Policies
+
+We use [Conftest](https://www.conftest.dev/) (built on [OPA/Rego](https://www.openpolicyagent.org/)) to enforce custom rules on Terraform files that can't be caught by tflint or checkov. Policies live in `conftest-policies/`.
+
+**Current policies:**
+
+- **JSON policy enforcement** (`json_policy.rego`) -- Bans `data "aws_iam_policy_document"` data sources and raw JSON heredoc strings in policy fields across all AWS resource types (IAM, S3, SNS, SQS, KMS, ECR, OpenSearch, CloudWatch Logs, etc.). Use `jsonencode()` instead.
+
+- **S3 lifecycle rule prefix validation** (`s3_lifecycle.rego`) -- Prevents placing `prefix` as a top-level key in S3 lifecycle rules instead of inside a `filter` block. The wrong syntax causes the expiration rule to apply to ALL objects in the bucket, not just the intended prefix.
+
+**Running manually:**
+
+```bash
+# Test a specific file
+conftest test --parser hcl2 --policy conftest-policies/ examples/05-aws-complete/storage.tf
+
+# Run policy unit tests
+conftest verify --policy conftest-policies/
+```
+
+**Adding new policies:**
+
+1. Create a `.rego` file in `conftest-policies/` with `deny_` rules
+2. Add tests in a corresponding `_test.rego` file
+3. Run `conftest verify --policy conftest-policies/` to validate
+4. Run `opa fmt -w conftest-policies/` to format
+
+## JSON Policy Standards
+
+Use `jsonencode()` for all AWS policy fields -- not just IAM, but also S3 bucket policies, KMS key policies, SNS/SQS policies, ECR repository policies, OpenSearch access policies, etc. Do NOT use `data "aws_iam_policy_document"` or raw JSON heredoc strings.
+
+This is enforced by `conftest-policies/json_policy.rego` across all examples and modules.
+
+### Preferred (jsonencode)
+
+```hcl
+resource "aws_iam_policy" "example" {
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["s3:GetObject"]
+      Resource = ["arn:aws:s3:::bucket/*"]
+    }]
+  })
+}
+
+resource "aws_s3_bucket_policy" "example" {
+  bucket = aws_s3_bucket.example.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = "*"
+      Action    = ["s3:GetObject"]
+      Resource  = ["${aws_s3_bucket.example.arn}/*"]
+    }]
+  })
+}
+```
+
+### Avoid (data source)
+
+```hcl
+data "aws_iam_policy_document" "example" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::bucket/*"]
+  }
+}
+```
+
+### Avoid (raw JSON heredoc)
+
+```hcl
+resource "aws_iam_policy" "example" {
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:GetObject"],
+    "Resource": ["arn:aws:s3:::bucket/*"]
+  }]
+}
+EOF
+}
+```
+
+**Rationale**: jsonencode keeps policy definition inline with the resource, is more readable, avoids extra data source lookups, and produces cleaner terraform plan output.
 
 ## Managed Databases
 

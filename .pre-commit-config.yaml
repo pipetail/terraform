@@ -62,3 +62,18 @@ repos:
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
+
+  - repo: https://github.com/anderseknert/pre-commit-opa
+    rev: v1.5.1
+    hooks:
+      - id: opa-fmt
+      - id: conftest-verify
+        args: [--policy, conftest-policies/]
+
+  - repo: local
+    hooks:
+      - id: conftest-terraform
+        name: Conftest Terraform policy check
+        entry: conftest test --parser hcl2 --policy conftest-policies/ --no-color
+        language: system
+        files: ^(examples|modules)/.*\.tf$
