@@ -45,7 +45,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
