@@ -45,6 +45,19 @@ jobs:
           chmod +x ./shfmt
           sudo mv ./shfmt /usr/local/bin/shfmt
 
+          # conftest
+          curl -sSLo ./conftest.tar.gz \
+            https://github.com/open-policy-agent/conftest/releases/download/v0.66.0/conftest_0.66.0_Linux_x86_64.tar.gz
+          tar -xzf ./conftest.tar.gz conftest
+          chmod +x ./conftest
+          sudo mv ./conftest /usr/local/bin/conftest
+
+          # opa
+          curl -sSLo ./opa \
+            https://github.com/open-policy-agent/opa/releases/download/v1.13.2/opa_linux_amd64_static
+          chmod +x ./opa
+          sudo mv ./opa /usr/local/bin/opa
+
           pip install pre-commit
           pip install checkov==3.2.500
 
