@@ -124,58 +124,19 @@ module "sg_loki" {
   }]
 }
 
-data "aws_iam_policy_document" "loki_ecs_task_execution_assume_role" {
-  statement {
-    sid    = "AllowECSTasksToAssumeRole"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
-}
-
-data "aws_iam_policy_document" "loki_ecs_task_execution_role" {
-  statement {
-    sid       = "AllowECSToAuthenticateToECRInCentralAccount"
-    effect    = "Allow"
-    actions   = ["ecr:GetAuthorizationToken"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "AllowECSToPullImage"
-    effect = "Allow"
-
-    actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage",
-    ]
-
-    resources = [aws_ecr_repository.grafana.arn]
-  }
-
-  statement {
-    sid    = "AllowECSToWriteLogsToCloudWatchLogs"
-    effect = "Allow"
-
-    actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogStreams",
-    ]
-
-    resources = [aws_cloudwatch_log_group.loki.arn]
-  }
-}
-
 resource "aws_iam_role" "loki_ecs_task_execution" {
-  name               = "loki-ecs-task-execution"
-  assume_role_policy = data.aws_iam_policy_document.loki_ecs_task_execution_assume_role.json
+  name = "loki-ecs-task-execution"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowECSTasksToAssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "loki_ecs_task_execution" {
@@ -184,57 +145,84 @@ resource "aws_iam_role_policy_attachment" "loki_ecs_task_execution" {
 }
 
 resource "aws_iam_role_policy" "loki_ecs_task_execution" {
-  name   = "loki-ecs-task-execution"
-  role   = aws_iam_role.loki_ecs_task_execution.name
-  policy = data.aws_iam_policy_document.loki_ecs_task_execution_role.json
-}
-
-data "aws_iam_policy_document" "loki_ecs_task_assume_role" {
-  statement {
-    sid    = "AllowECSTasksToAssumeRole"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
+  name = "loki-ecs-task-execution"
+  role = aws_iam_role.loki_ecs_task_execution.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AllowECSToAuthenticateToECRInCentralAccount"
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
+        Resource = ["*"]
+      },
+      {
+        Sid    = "AllowECSToPullImage"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+        ]
+        Resource = [aws_ecr_repository.grafana.arn]
+      },
+      {
+        Sid    = "AllowECSToWriteLogsToCloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams",
+        ]
+        Resource = [aws_cloudwatch_log_group.loki.arn]
+      },
+    ]
+  })
 }
 
 resource "aws_iam_role" "loki_ecs_task" {
-  name               = "loki-ecs-task"
-  assume_role_policy = data.aws_iam_policy_document.loki_ecs_task_assume_role.json
-}
-
-data "aws_iam_policy_document" "loki_storage" {
-  statement {
-    sid    = "AllowLokiStorageChunksS3"
-    effect = "Allow"
-    actions = [
-      "s3:ListBucket",
-      "s3:PutObject",
-      "s3:GetObject",
-      "s3:DeleteObject",
-    ]
-    resources = [
-      module.loki_storage.s3_bucket_arn,
-      "${module.loki_storage.s3_bucket_arn}/*"
-    ]
-  }
+  name = "loki-ecs-task"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowECSTasksToAssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "loki_storage" {
-  name   = "loki-storage-access"
-  role   = aws_iam_role.loki_ecs_task.name
-  policy = data.aws_iam_policy_document.loki_storage.json
+  name = "loki-storage-access"
+  role = aws_iam_role.loki_ecs_task.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowLokiStorageChunksS3"
+      Effect = "Allow"
+      Action = [
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+      ]
+      Resource = [
+        module.loki_storage.s3_bucket_arn,
+        "${module.loki_storage.s3_bucket_arn}/*",
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "loki_ecs_task_command_exec" {
+  #checkov:skip=CKV_AWS_290:SSM and logs actions require wildcard resources for ECS Exec
+  #checkov:skip=CKV_AWS_355:SSM and logs actions require wildcard resources for ECS Exec
   name   = "loki-ecs-command-exec"
   role   = aws_iam_role.loki_ecs_task.name
-  policy = data.aws_iam_policy_document.allow_command_exec.json
+  policy = local.allow_command_exec_policy
 }
 
 module "loki_storage" {

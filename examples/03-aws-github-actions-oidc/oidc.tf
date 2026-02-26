@@ -19,29 +19,24 @@ module "github_oidc_custom_policy" {
 }
 
 resource "aws_iam_role_policy" "github_actions_push_to_ecr" {
-  name   = "github-actions-push-to-ecr"
-  role   = module.github_oidc_custom_policy.role_name
-  policy = data.aws_iam_policy_document.ecr_push_only.json
-}
-
-data "aws_iam_policy_document" "ecr_push_only" {
-
-  statement {
-
-    actions = [
-      "ecr:BatchGetImage",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:CompleteLayerUpload",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:InitiateLayerUpload",
-      "ecr:PutImage",
-      "ecr:UploadLayerPart"
-    ]
-
-    resources = [
-      aws_ecr_repository.test.arn
-    ]
-  }
+  name = "github-actions-push-to-ecr"
+  role = module.github_oidc_custom_policy.role_name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+      ]
+      Resource = [aws_ecr_repository.test.arn]
+    }]
+  })
 }
 
 resource "aws_ecr_repository" "test" {
