@@ -25,12 +25,6 @@ variable "k8s_addon_version" {
   description = "EKS addons version"
 }
 
-variable "k8s_architecture" {
-  type        = string
-  default     = "x86_64"
-  description = "cpu architecture to use with k8s nodes"
-}
-
 variable "kms_key_administrators" {
   type        = list(string)
   default     = []
