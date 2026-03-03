@@ -3,6 +3,21 @@ locals {
     "k8s.io/cluster-autoscaler/enabled"     = "true"
     "k8s.io/cluster-autoscaler/${var.name}" = "owned"
   }
+
+  access_entries = length(var.map_roles) > 0 || length(var.map_users) > 0 ? merge(
+    { for role in var.map_roles :
+      role.rolearn => {
+        kubernetes_groups = role.groups
+        principal_arn     = role.rolearn
+      }
+    },
+    { for user in var.map_users :
+      user.userarn => {
+        kubernetes_groups = user.groups
+        principal_arn     = user.userarn
+      }
+    }
+  ) : {}
 }
 
 module "eks" {
@@ -47,20 +62,7 @@ module "eks" {
     }
   }
 
-  access_entries = merge(
-    { for role in var.map_roles :
-      role.rolearn => {
-        kubernetes_groups = role.groups
-        principal_arn     = role.rolearn
-      }
-    },
-    { for user in var.map_users :
-      user.userarn => {
-        kubernetes_groups = user.groups
-        principal_arn     = user.userarn
-      }
-    }
-  )
+  access_entries = local.access_entries
 
   self_managed_node_groups = {
     for i, v in var.worker_groups : "nodegroup${i}" => {
