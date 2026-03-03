@@ -45,18 +45,6 @@ variable "worker_groups" {
   description = "k8s worker groups configuration"
 }
 
-variable "map_roles" {
-  type        = list(any)
-  default     = []
-  description = "additional roles that should be mapped to aws-auth config map"
-}
-
-variable "map_users" {
-  type        = list(any)
-  default     = []
-  description = "additional users that should be mapped to aws-auth config map"
-}
-
 variable "allow_ingress" {
   type = map(object({
     source_security_group_id = string
