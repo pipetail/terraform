@@ -49,3 +49,6 @@ modules/**/.terraform.lock.hcl
 
 # ignore infracost resources
 .infracost/
+
+# test fixtures
+conftest-policies/testdata/
