@@ -25,6 +25,12 @@ variable "k8s_addon_version" {
   description = "EKS addons version"
 }
 
+variable "k8s_architecture" {
+  type        = string
+  default     = "x86_64"
+  description = "cpu architecture to use with k8s nodes"
+}
+
 variable "kms_key_administrators" {
   type        = list(string)
   default     = []
@@ -43,6 +49,18 @@ variable "worker_groups" {
     market_type       = string
   }))
   description = "k8s worker groups configuration"
+}
+
+variable "map_roles" {
+  type        = list(any)
+  default     = []
+  description = "additional roles that should be mapped to aws-auth config map"
+}
+
+variable "map_users" {
+  type        = list(any)
+  default     = []
+  description = "additional users that should be mapped to aws-auth config map"
 }
 
 variable "allow_ingress" {

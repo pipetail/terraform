@@ -39,6 +39,24 @@ module "eks" {
       market_type = null
     }
   ]
+
+  map_roles = [
+    { // terraform github actions need to have access too!
+      // somewhere we'd do: rolearn  = module.github_oidc.role_arn
+      rolearn  = data.aws_iam_role.github_actions.arn
+      username = "infrastructure:{{SessionName}}"
+      groups = [
+        "system:masters",
+      ]
+    },
+    {
+      rolearn  = aws_iam_role.eks_access_administrator.arn
+      username = "administrator:{{SessionName}}"
+      groups = [
+        "system:masters", // administrators should have full access
+      ]
+    },
+  ]
 }
 
 // roles and groups for the EKS access

@@ -3,6 +3,21 @@ locals {
     "k8s.io/cluster-autoscaler/enabled"     = "true"
     "k8s.io/cluster-autoscaler/${var.name}" = "owned"
   }
+
+  access_entries = merge(
+    { for role in var.map_roles :
+      role.rolearn => {
+        kubernetes_groups = role.groups
+        principal_arn     = role.rolearn
+      }
+    },
+    { for user in var.map_users :
+      user.userarn => {
+        kubernetes_groups = user.groups
+        principal_arn     = user.userarn
+      }
+    }
+  )
 }
 
 module "eks" {
@@ -23,6 +38,7 @@ module "eks" {
 
   kms_key_enable_default_policy = true
   kms_key_administrators        = var.kms_key_administrators
+
 
   encryption_config = {
     resources        = ["secrets"]
@@ -49,25 +65,23 @@ module "eks" {
     }
   }
 
+  access_entries = length(var.map_roles) > 0 ? local.access_entries : {}
+
   self_managed_node_groups = {
     for i, v in var.worker_groups : "nodegroup${i}" => {
       name          = v.name
       instance_type = v.instance_type
 
-      ami_type = "BOTTLEROCKET_x86_64"
+      iam_role_attach_cni_policy = true
+
+      platform = "bottlerocket"
+      ami_id   = data.aws_ami.bottlerocket_ami.id
 
       min_size     = v.asg_min_size
       max_size     = v.asg_max_size
       desired_size = v.asg_min_size
 
       subnets = v.subnets
-
-      iam_role_additional_policies = {
-        ssm = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-        csi = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-      }
-
-      iam_role_attach_cni_policy = true
 
       bootstrap_extra_args = <<-EOT
         [settings.host-containers.admin]
@@ -76,6 +90,7 @@ module "eks" {
         [settings.host-containers.control]
         enabled = true
 
+        # extra args added
         [settings.kernel]
         lockdown = "integrity"
 
@@ -89,14 +104,16 @@ module "eks" {
 
       target_group_arns = v.target_group_arns
 
-      root_volume_size = 20
+      # see https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#ImageDetails:imageId=ami-00b9b96f830a6c28b
+      root_volume_size = 2
 
+      # ephemeral storage
       additional_ebs_volumes = [
         {
-          block_device_name     = "/dev/xvdb"
-          volume_size           = 20
-          volume_type           = "gp3"
-          delete_on_termination = true
+          block_device_name     = "/dev/xvdb",
+          volume_size           = 20,
+          volume_type           = "gp3",
+          delete_on_termination = true,
         }
       ]
 
