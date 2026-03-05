@@ -5,9 +5,9 @@ import rego.v1
 deny_dynamodb_unencrypted contains msg if {
 	some name
 	some block in input.resource.aws_dynamodb_table[name]
-	object.get(block, "server_side_encryption", false) != true
+	count(object.get(block, "server_side_encryption", [])) == 0
 	msg := sprintf(
-		"aws_dynamodb_table.%s: server_side_encryption must be true",
+		"aws_dynamodb_table.%s: server_side_encryption must be enabled",
 		[name],
 	)
 }
@@ -28,7 +28,7 @@ deny_dynamodb_replica_missing contains msg if {
 deny_dynamodb_pitr_disabled contains msg if {
 	some name
 	some block in input.resource.aws_dynamodb_table[name]
-	object.get(block, "point_in_time_recovery", false) != true
+	count(object.get(block, "point_in_time_recovery", [])) == 0
 	msg := sprintf(
 		"aws_dynamodb_table.%s: point_in_time_recovery should be enabled",
 		[name],
