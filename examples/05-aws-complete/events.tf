@@ -37,11 +37,11 @@ resource "aws_s3_bucket_public_access_block" "lambda_deployments" {
 module "aws_events_to_slack" {
   source = "../../modules/aws-events-to-slack"
 
-  s3_deployment_bucket = aws_s3_bucket.lambda_deployments.id
-  account_name         = var.name_prefix
-  regions              = var.region
-  slack_channel        = var.slack_channel
-  notification_emails  = var.notification_emails
-  cloudtrail_enabled   = true
+  s3_deployment_bucket   = aws_s3_bucket.lambda_deployments.id
+  account_name           = var.name_prefix
+  regions                = var.region
+  slack_channel          = var.slack_channel
+  notification_emails    = var.notification_emails
+  cloudtrail_enabled     = true
   rds_monitoring_enabled = true
 }
