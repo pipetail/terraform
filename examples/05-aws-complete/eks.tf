@@ -6,7 +6,8 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  k8s_version = "1.27"
+  k8s_version      = "1.27"
+  k8s_architecture = "arm64"
 
   kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
@@ -28,35 +29,34 @@ module "eks" {
   worker_groups = [
     {
       name          = "mainpool"
-      instance_type = "m5a.large"
+      instance_type = "m7g.large"
       asg_max_size  = 6
       asg_min_size  = 1
       subnets       = module.vpc.private_subnets
 
       target_group_arns = [aws_alb_target_group.nginx_ingress.arn]
 
-      set_taint   = false
-      market_type = null
+      set_taint     = false
+      capacity_type = "ON_DEMAND"
     }
   ]
 
-  map_roles = [
-    { // terraform github actions need to have access too!
-      // somewhere we'd do: rolearn  = module.github_oidc.role_arn
-      rolearn  = data.aws_iam_role.github_actions.arn
-      username = "infrastructure:{{SessionName}}"
-      groups = [
-        "system:masters",
-      ]
-    },
-    {
-      rolearn  = aws_iam_role.eks_access_administrator.arn
-      username = "administrator:{{SessionName}}"
-      groups = [
-        "system:masters", // administrators should have full access
-      ]
-    },
-  ]
+  access_entries = {
+    // administrators assume this role to get full cluster access.
+    // the github actions role that applies terraform is the cluster creator
+    // and gets admin via enable_cluster_creator_admin_permissions in the module.
+    administrator = {
+      principal_arn = aws_iam_role.eks_access_administrator.arn
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 }
 
 // roles and groups for the EKS access

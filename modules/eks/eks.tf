@@ -3,16 +3,24 @@ locals {
     "k8s.io/cluster-autoscaler/enabled"     = "true"
     "k8s.io/cluster-autoscaler/${var.name}" = "owned"
   }
+
+  is_arm64              = contains(["arm64", "aarch64"], var.k8s_architecture)
+  bottlerocket_ami_type = local.is_arm64 ? "BOTTLEROCKET_ARM_64" : "BOTTLEROCKET_x86_64"
+  bottlerocket_ami_arch = local.is_arm64 ? "aarch64" : "x86_64"
 }
 
 module "eks" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.21.0"
+  version = "21.22.0"
 
-  cluster_endpoint_public_access = true
+  endpoint_public_access = true
 
-  cluster_addons = {
+  authentication_mode                      = "API"
+  enable_cluster_creator_admin_permissions = true
+  access_entries                           = var.access_entries
+
+  addons = {
     coredns = {
       addon_version = data.aws_eks_addon_version.coredns.version
       timeouts = {
@@ -28,55 +36,61 @@ module "eks" {
       #service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
     aws-ebs-csi-driver = {
-      addon_version     = data.aws_eks_addon_version.ebs_csi_driver.version
-      resolve_conflicts = "OVERWRITE"
+      addon_version               = data.aws_eks_addon_version.ebs_csi_driver.version
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
   }
-
-  # Self managed node groups will not automatically create the aws-auth configmap so we need to
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = true
 
   kms_key_enable_default_policy = true
   kms_key_administrators        = var.kms_key_administrators
 
 
-  cluster_encryption_config = {
+  encryption_config = {
     resources        = ["secrets"]
     provider_key_arn = var.secrets_encryption_kms_key_arn
   }
 
-  cluster_name    = var.name
-  cluster_version = var.k8s_version
-  subnet_ids      = var.control_plane_subnets
-  vpc_id          = var.vpc_id
+  name               = var.name
+  kubernetes_version = var.k8s_version
+  subnet_ids         = var.control_plane_subnets
+  vpc_id             = var.vpc_id
 
-  self_managed_node_group_defaults = {
-    iam_role_additional_policies = {
-      ssm = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-      // AmazonEBSCSIDriverPolicy is definitely not needed by all nodes, only by csi-driver, it's here just for simplicity (EKS module doesn't support it)
-      csi = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    }
-  }
-
-  aws_auth_roles = var.map_roles
-  aws_auth_users = var.map_users
-
-  self_managed_node_groups = {
+  eks_managed_node_groups = {
     for i, v in var.worker_groups : "nodegroup${i}" => {
-      name          = v.name
-      instance_type = v.instance_type
+      name           = v.name
+      instance_types = [v.instance_type]
 
       iam_role_attach_cni_policy = true
+      iam_role_additional_policies = {
+        ssm = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+        // AmazonEBSCSIDriverPolicy is definitely not needed by all nodes, only by csi-driver, it's here just for simplicity (EKS module doesn't support it)
+        csi = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      }
 
-      platform = "bottlerocket"
-      ami_id   = data.aws_ami.bottlerocket_ami.id
+      ami_type                   = local.bottlerocket_ami_type
+      ami_id                     = data.aws_ami.bottlerocket_ami.id
+      enable_bootstrap_user_data = true
 
       min_size     = v.asg_min_size
       max_size     = v.asg_max_size
       desired_size = v.asg_min_size
 
-      subnets = v.subnets
+      subnet_ids = v.subnets
+
+      capacity_type = v.capacity_type
+
+      labels = {
+        nodepool = v.name
+      }
+
+      taints = v.set_taint ? {
+        nodepool = {
+          key    = "nodepool"
+          value  = v.name
+          effect = "NO_SCHEDULE"
+        }
+      } : {}
 
       bootstrap_extra_args = <<-EOT
         [settings.host-containers.admin]
@@ -92,27 +106,30 @@ module "eks" {
         [settings.kernel.sysctl]
         "net.ipv6.conf.all.disable_ipv6" = "1"
         "net.ipv6.conf.default.disable_ipv6" = "1"
-
-        [settings.kubernetes.node-labels]
-        nodepool = "main"
       EOT
 
-      target_group_arns = v.target_group_arns
-
       // see https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#ImageDetails:imageId=ami-00b9b96f830a6c28b
-      root_volume_size = 2
-
-      // ephemeral storage
-      additional_ebs_volumes = [
-        {
-          block_device_name     = "/dev/xvdb",
-          volume_size           = 20,
-          volume_type           = "gp3",
-          delete_on_termination = true,
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = 2
+            volume_type           = "gp3"
+            delete_on_termination = true
+            encrypted             = true
+          }
         }
-      ]
-
-      market_type = v.market_type
+        // ephemeral storage
+        xvdb = {
+          device_name = "/dev/xvdb"
+          ebs = {
+            volume_size           = 20
+            volume_type           = "gp3"
+            delete_on_termination = true
+            encrypted             = true
+          }
+        }
+      }
 
       tags = merge(
         local.default_tags,
@@ -124,6 +141,28 @@ module "eks" {
       )
     }
   }
+}
+
+locals {
+  # flatten (node group, target group ARN) pairs so each managed node group ASG
+  # can be attached to its load balancer target groups (target_group_arns was
+  # removed from node groups in EKS module v21)
+  node_target_group_attachments = merge([
+    for i, v in var.worker_groups : {
+      for idx, arn in v.target_group_arns :
+      "nodegroup${i}-${idx}" => {
+        node_group = "nodegroup${i}"
+        arn        = arn
+      }
+    }
+  ]...)
+}
+
+resource "aws_autoscaling_attachment" "node_target_groups" {
+  for_each = local.node_target_group_attachments
+
+  autoscaling_group_name = one(module.eks.eks_managed_node_groups[each.value.node_group].node_group_autoscaling_group_names)
+  lb_target_group_arn    = each.value.arn
 }
 
 # TODO:

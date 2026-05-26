@@ -46,21 +46,15 @@ variable "worker_groups" {
     target_group_arns = list(string)
     subnets           = list(string)
     set_taint         = bool // automatically add a taint with the nodepool name
-    market_type       = string
+    capacity_type     = string
   }))
   description = "k8s worker groups configuration"
 }
 
-variable "map_roles" {
-  type        = list(any)
-  default     = []
-  description = "additional roles that should be mapped to aws-auth config map"
-}
-
-variable "map_users" {
-  type        = list(any)
-  default     = []
-  description = "additional users that should be mapped to aws-auth config map"
+variable "access_entries" {
+  type        = any
+  default     = {}
+  description = "Map of EKS access entries to create (principal_arn + policy_associations)"
 }
 
 variable "allow_ingress" {

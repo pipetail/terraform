@@ -3,10 +3,18 @@ resource "random_password" "db_master_password" {
   special = false
 }
 
+locals {
+  # Aurora has no cluster-level auto-minor-version-upgrade toggle — it's a per-instance
+  # DB attribute. Define it once here and apply it to every instance below.
+  db_instance_defaults = {
+    auto_minor_version_upgrade = false
+  }
+}
+
 module "db" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/rds-aurora/aws"
-  version = "9.16.1"
+  version = "10.2.0"
 
   name          = "${var.name_prefix}-main"
   database_name = "app"
@@ -15,15 +23,18 @@ module "db" {
   engine_version = "16.6"
   engine_mode    = "provisioned"
 
-  instance_class = "db.r6g.large"
+  cluster_instance_class = "db.r6g.large"
   instances = {
-    one = {}
-    two = { promotion_tier = 2 } // higher tier = lower failover priority, used as read replica
+    one = local.db_instance_defaults
+    two = merge(local.db_instance_defaults, {
+      promotion_tier = 2 // higher tier = lower failover priority, used as read replica
+    })
   }
 
   manage_master_user_password = false
   master_username             = "root"
-  master_password             = random_password.db_master_password.result
+  master_password_wo          = random_password.db_master_password.result
+  master_password_wo_version  = 1
 
   storage_encrypted = true
   kms_key_id        = aws_kms_key.main.arn
@@ -31,14 +42,14 @@ module "db" {
   vpc_id                = module.vpc.vpc_id
   db_subnet_group_name  = module.vpc.database_subnet_group_name
   create_security_group = true
-  security_group_rules = {
+  security_group_ingress_rules = {
     eks_ingress = {
-      source_security_group_id = module.eks.worker_security_group_id
+      referenced_security_group_id = module.eks.worker_security_group_id
     }
   }
 
-  performance_insights_enabled          = true
-  performance_insights_retention_period = 7
+  cluster_performance_insights_enabled          = true
+  cluster_performance_insights_retention_period = 7
 
   enabled_cloudwatch_logs_exports = ["postgresql"]
 
@@ -53,7 +64,6 @@ module "db" {
 
   deletion_protection         = true
   allow_major_version_upgrade = false
-  auto_minor_version_upgrade  = false
   apply_immediately           = false
 }
 

@@ -3,7 +3,7 @@ data "aws_ami" "bottlerocket_ami" {
   owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["bottlerocket-aws-k8s-${var.k8s_version}-${var.k8s_architecture}-*"]
+    values = ["bottlerocket-aws-k8s-${var.k8s_version}-${local.bottlerocket_ami_arch}-*"]
   }
 }
 
