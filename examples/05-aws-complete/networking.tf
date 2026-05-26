@@ -1,7 +1,7 @@
 module "vpc" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.16.0"
+  version = "6.6.1"
 
   name = "${var.name_prefix}-main-vpc"
   cidr = var.vpc_cidr
@@ -59,7 +59,7 @@ module "sg_vpc_endpoints" {
 module "vpc_endpoints" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "5.16.0"
+  version = "6.6.1"
 
   security_group_ids = [module.sg_vpc_endpoints.security_group_id]
   vpc_id             = module.vpc.vpc_id

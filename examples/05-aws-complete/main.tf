@@ -33,7 +33,7 @@ provider "helm" {
 }
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.11.0"
 
   backend "s3" {
     bucket       = "pipetail-examples-terraform-state"
@@ -46,7 +46,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0.0, < 6.0.0"
+      version = "= 6.46.0"
     }
     random = {
       source  = "hashicorp/random"
