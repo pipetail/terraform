@@ -4,37 +4,28 @@
 module "aws_events_to_slack" {
   source = "../../modules/aws-events-to-slack"
 
-  lambda_version         = "1.0.0"
-  account_name           = var.name_prefix
-  regions                = var.region
-  slack_channel          = var.slack_channel
-  notification_emails    = var.notification_emails
-  cloudtrail_enabled     = true
-  rds_monitoring_enabled = true
+  lambda_version           = "1.0.0"
+  account_name             = var.name_prefix
+  regions                  = var.region
+  slack_channel            = var.slack_channel
+  slack_webhook_secret_arn = aws_secretsmanager_secret_version.slack_webhook.arn
+  notification_emails      = var.notification_emails
+  cloudtrail_enabled       = true
+  rds_monitoring_enabled   = true
 
   # Empty list forwards all AWS Health categories; listed here for illustration.
   health_event_categories = ["issue", "accountNotification", "scheduledChange", "investigation"]
 }
 
-# AWS Health delivers events for global services (IAM, CloudFront, Route 53, ...)
-# to us-east-1, while regional events arrive in their own region. Deploy a second,
-# Health-only instance via the us-east-1 provider to capture the global ones.
-# create_account_global_resources = false keeps the account-wide budget/anomaly/
-# daily-check resources on the primary instance only.
-# Note: the slack-webhook Secrets Manager secret must also exist in us-east-1.
-module "aws_events_to_slack_global" {
-  source = "../../modules/aws-events-to-slack"
+# The Slack webhook secret lives outside the module. This example creates one with a
+# stub URL; replace the value with a real incoming-webhook URL before relying on it.
+resource "aws_secretsmanager_secret" "slack_webhook" {
+  #checkov:skip=CKV_AWS_149:Stub webhook config for the example; default AWS-managed key is sufficient
+  #checkov:skip=CKV2_AWS_57:Slack webhook URL is a static credential, rotation is not applicable
+  name = "${var.name_prefix}-slack-webhook"
+}
 
-  providers = {
-    aws = aws.virginia
-  }
-
-  name                            = "${var.name_prefix}-aws-events-global"
-  lambda_version                  = "1.0.0"
-  account_name                    = var.name_prefix
-  regions                         = var.region
-  slack_channel                   = var.slack_channel
-  create_account_global_resources = false
-
-  health_event_categories = ["issue", "accountNotification", "scheduledChange", "investigation"]
+resource "aws_secretsmanager_secret_version" "slack_webhook" {
+  secret_id     = aws_secretsmanager_secret.slack_webhook.id
+  secret_string = jsonencode({ WEBHOOK_URL = "https://hooks.slack.com/services/REPLACE-WITH-REAL-SLACK-WEBHOOK" })
 }

@@ -25,12 +25,8 @@ locals {
   ]
 }
 
-data "aws_secretsmanager_secret" "slack_webhook" {
-  name = var.slack_webhook_secret_name
-}
-
 data "aws_secretsmanager_secret_version" "slack_webhook" {
-  secret_id = data.aws_secretsmanager_secret.slack_webhook.id
+  secret_id = var.slack_webhook_secret_arn
 }
 
 # Fetch the published Lambda package from the GitHub release, keyed on version so

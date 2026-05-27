@@ -24,10 +24,9 @@ variable "slack_channel" {
   type        = string
 }
 
-variable "slack_webhook_secret_name" {
-  description = "Secrets Manager secret name containing WEBHOOK_URL and optionally SLACK_BOT_TOKEN keys"
+variable "slack_webhook_secret_arn" {
+  description = "ARN of an externally-managed Secrets Manager secret holding WEBHOOK_URL and optionally SLACK_BOT_TOKEN keys"
   type        = string
-  default     = "slack-webhook"
 }
 
 variable "thresholds_url" {

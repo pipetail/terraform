@@ -44,9 +44,10 @@ deploy a second, Health-only instance through a `us-east-1` aliased provider wit
 
 ## Slack credentials
 
-`slack_webhook_secret_name` points to a Secrets Manager secret holding a `WEBHOOK_URL` key
-and, optionally, a `SLACK_BOT_TOKEN` key. When a bot token and `slack_channel` are present the
-function posts via `chat.postMessage`, otherwise it falls back to the incoming webhook.
+`slack_webhook_secret_arn` is the ARN of an externally-managed Secrets Manager secret holding a
+`WEBHOOK_URL` key and, optionally, a `SLACK_BOT_TOKEN` key. The secret is created and owned outside
+this module. When a bot token and `slack_channel` are present the function posts via
+`chat.postMessage`, otherwise it falls back to the incoming webhook.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -104,7 +105,6 @@ No modules.
 | [aws_sns_topic_subscription.lambda_alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
 | [null_resource.lambda_package](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
-| [aws_secretsmanager_secret.slack_webhook](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
 | [aws_secretsmanager_secret_version.slack_webhook](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret_version) | data source |
 | [http_http.lambda_package_hash](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
 
@@ -126,7 +126,7 @@ No modules.
 | <a name="input_rds_monitoring_enabled"></a> [rds\_monitoring\_enabled](#input\_rds\_monitoring\_enabled) | Enable RDS monitoring SNS topic and Lambda subscription | `bool` | `false` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | Comma-separated AWS regions for multi-region checks | `string` | n/a | yes |
 | <a name="input_slack_channel"></a> [slack\_channel](#input\_slack\_channel) | Slack channel ID to post notifications to | `string` | n/a | yes |
-| <a name="input_slack_webhook_secret_name"></a> [slack\_webhook\_secret\_name](#input\_slack\_webhook\_secret\_name) | Secrets Manager secret name containing WEBHOOK\_URL and optionally SLACK\_BOT\_TOKEN keys | `string` | `"slack-webhook"` | no |
+| <a name="input_slack_webhook_secret_arn"></a> [slack\_webhook\_secret\_arn](#input\_slack\_webhook\_secret\_arn) | ARN of an externally-managed Secrets Manager secret holding WEBHOOK\_URL and optionally SLACK\_BOT\_TOKEN keys | `string` | n/a | yes |
 | <a name="input_thresholds_url"></a> [thresholds\_url](#input\_thresholds\_url) | Optional URL shown in budget alerts pointing to where alert thresholds are configured. When empty, the link is omitted. | `string` | `""` | no |
 | <a name="input_timeout"></a> [timeout](#input\_timeout) | Lambda function timeout in seconds | `number` | `300` | no |
 
