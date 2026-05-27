@@ -52,3 +52,10 @@ modules/**/.terraform.lock.hcl
 
 # test fixtures
 conftest-policies/testdata/
+
+# Lambda build artifacts (published as GitHub release assets, not committed)
+src/*.zip
+src/*.zip.b64sha256
+
+# Lambda packages downloaded by modules at apply time
+modules/**/.artifacts/

@@ -1,0 +1,47 @@
+---
+name: lambda-release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'aws-events-to-slack-v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Publish Lambda release asset
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+
+      - name: Package Lambda (reproducible zip)
+        run: |
+          chmod +x scripts/package-lambdas.sh
+          ./scripts/package-lambdas.sh aws-events-to-slack
+
+      - name: Build versioned asset + checksum
+        run: |
+          VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
+          cp "src/aws-events-to-slack.zip" "aws-events-to-slack-${VERSION}.zip"
+          # source_code_hash expects base64 of the raw SHA256 digest (same as filebase64sha256)
+          openssl dgst -sha256 -binary "aws-events-to-slack-${VERSION}.zip" \
+            | openssl base64 -A > "aws-events-to-slack-${VERSION}.zip.b64sha256"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "aws-events-to-slack-${VERSION}.zip" \
+            "aws-events-to-slack-${VERSION}.zip.b64sha256" \
+            --title "$GITHUB_REF_NAME" \
+            --notes "aws-events-to-slack Lambda package ${VERSION}"

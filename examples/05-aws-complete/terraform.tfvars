@@ -14,6 +14,8 @@ notification_emails = [
   "marek.bartik@pipetail.io"
 ]
 
+slack_channel = "CXXXXXXXXXX"
+
 retention_in_days = 30
 
 redis = {

@@ -2,8 +2,7 @@
 name: Package Lambda Functions
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 on:
   pull_request:
@@ -63,18 +62,13 @@ jobs:
           chmod +x scripts/package-lambdas.sh
           ./scripts/package-lambdas.sh ${{ steps.lambdas.outputs.args }}
 
-      - name: Check for changes
-        id: git-check
-        run: |
-          git diff --exit-code src/*.zip || echo "changed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Commit and push updated packages
-        if: steps.git-check.outputs.changed == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add src/*.zip
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: update Lambda function packages"
-            git push
-          fi
+      # Packages are published as GitHub release assets (see lambda-release.yaml),
+      # not committed to the repo. This step only verifies that the source packages
+      # cleanly and uploads the result as a CI artifact for inspection.
+      - name: Upload packaged artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: steps.changes.outputs.src == 'true' || steps.changes.outputs.packaging-script == 'true'
+        with:
+          name: lambda-packages
+          path: src/*.zip
+          if-no-files-found: ignore
