@@ -8,6 +8,12 @@ on:
   push:
     tags:
       - 'aws-events-to-slack-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Lambda version to release (defaults to src/aws-events-to-slack/package.json)'
+        required: false
+        type: string
 
 jobs:
   release:
@@ -16,6 +22,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Resolve version and tag
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
+          else
+            VERSION="${{ inputs.version }}"
+            [ -n "$VERSION" ] || VERSION="$(jq -r .version src/aws-events-to-slack/package.json)"
+          fi
+          {
+            echo "VERSION=${VERSION}"
+            echo "TAG=aws-events-to-slack-v${VERSION}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
@@ -29,7 +48,6 @@ jobs:
 
       - name: Build versioned asset + checksum
         run: |
-          VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
           cp "src/aws-events-to-slack.zip" "aws-events-to-slack-${VERSION}.zip"
           # source_code_hash expects base64 of the raw SHA256 digest (same as filebase64sha256)
           openssl dgst -sha256 -binary "aws-events-to-slack-${VERSION}.zip" \
@@ -39,9 +57,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$TAG" \
             "aws-events-to-slack-${VERSION}.zip" \
             "aws-events-to-slack-${VERSION}.zip.b64sha256" \
-            --title "$GITHUB_REF_NAME" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
             --notes "aws-events-to-slack Lambda package ${VERSION}"
