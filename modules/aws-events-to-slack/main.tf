@@ -143,6 +143,17 @@ resource "aws_lambda_function" "this" {
     }
   }
 
+  # Marker tags the pipetail.cloud portal reads (Lambda ListTags) to identify this install and
+  # surface its version + enabled features on the Alerts pillar, without enumerating the module's
+  # EventBridge rules / SNS topics per region.
+  tags = {
+    Module            = "aws-events-to-slack"
+    ModuleVersion     = var.lambda_version
+    FeatureCloudtrail = tostring(var.cloudtrail_enabled)
+    FeatureRds        = tostring(var.rds_monitoring_enabled)
+    FeatureGlobal     = tostring(var.create_account_global_resources)
+  }
+
   depends_on = [
     null_resource.lambda_package,
     aws_cloudwatch_log_group.lambda,
