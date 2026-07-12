@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME } from "../config.mjs";
-import { postToSlack } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
 
 // Events that are noise when they close successfully
 const SKIP_WHEN_CLOSED = new Set([
@@ -45,9 +45,10 @@ export async function handleHealthEvent(event) {
   text += `\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
 
   const color = statusCode === "closed" ? "good" : "danger";
+  const summary = `:hospital: AWS Health: ${service} - ${eventTypeCode}`;
 
   await postToSlack({
-    text: `:hospital: AWS Health: ${service} - ${eventTypeCode}`,
+    text: summary,
     attachments: [
       {
         color,
@@ -60,6 +61,8 @@ export async function handleHealthEvent(event) {
       },
     ],
   });
+
+  logSlackForward({ category: "health", severity: severityFromColor(color), title: summary });
 
   return { statusCode: 200, body: "OK" };
 }

@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME } from "../config.mjs";
-import { postToSlack } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
 
 const IGNORED_EVENTS = new Set(
   (process.env.CLOUDTRAIL_IGNORED_EVENTS || "")
@@ -70,8 +70,10 @@ async function handleApiCall(event, detail) {
 
   text += `\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
 
+  const summary = `:shield: CloudTrail: ${eventName} by ${who}`;
+
   await postToSlack({
-    text: `:shield: CloudTrail: ${eventName} by ${who}`,
+    text: summary,
     attachments: [
       {
         color,
@@ -84,6 +86,8 @@ async function handleApiCall(event, detail) {
       },
     ],
   });
+
+  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary });
 
   return { statusCode: 200, body: "OK" };
 }
@@ -117,9 +121,10 @@ async function handleConsoleLogin(event, detail) {
   text += `\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
 
   const color = isRoot ? "danger" : "warning";
+  const summary = `${reason} — ${who}`;
 
   await postToSlack({
-    text: `${reason} — ${who}`,
+    text: summary,
     attachments: [
       {
         color,
@@ -132,6 +137,8 @@ async function handleConsoleLogin(event, detail) {
       },
     ],
   });
+
+  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary });
 
   return { statusCode: 200, body: "OK" };
 }
