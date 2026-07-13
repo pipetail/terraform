@@ -39,6 +39,12 @@ export async function check(regions) {
   return stale;
 }
 
+export function summarize(findings) {
+  return findings.map((ami) =>
+    `${ami.id} ${ami.name} (${ami.region}) created ${ami.created} (${ami.ageDays}d old)`,
+  );
+}
+
 export function format(findings) {
   let text = `:frame_with_picture: Stale AMIs Report\n\n`;
   text += `*Stale AMIs (not latest, >${AMI_STALE_AGE_DAYS}d old):* ${findings.length}\n`;

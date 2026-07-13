@@ -21,6 +21,23 @@ export async function check(regions) {
   return allActions;
 }
 
+export function summarize(actions) {
+  return actions.map((action) => {
+    const arn = action.ResourceIdentifier || "";
+    const resourceName = arn.split(":").pop() || arn;
+    const details = (action.PendingMaintenanceActionDetails || []).map((detail) => {
+      const actionType = detail.Action || "unknown";
+      const autoApply = detail.AutoAppliedAfterDate
+        ? new Date(detail.AutoAppliedAfterDate).toISOString().split("T")[0]
+        : detail.ForcedApplyDate
+          ? new Date(detail.ForcedApplyDate).toISOString().split("T")[0]
+          : "N/A";
+      return `${actionType} auto-apply ${autoApply}`;
+    }).join(", ");
+    return `${resourceName} (${action.Region}): ${details}`;
+  });
+}
+
 export function format(actions) {
   const totalActions = actions.reduce(
     (sum, a) => sum + (a.PendingMaintenanceActionDetails?.length || 0),

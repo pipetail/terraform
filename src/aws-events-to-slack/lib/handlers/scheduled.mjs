@@ -22,6 +22,18 @@ const checks = [
   { name: "AMI cleanup", module: amiCleanup, regional: true },
 ];
 
+const MAX_BODY_FINDINGS = 10;
+
+function findingsBody(module, findings) {
+  if (typeof module.summarize !== "function") return undefined;
+  const lines = module.summarize(findings);
+  let body = lines.slice(0, MAX_BODY_FINDINGS).join("; ");
+  if (lines.length > MAX_BODY_FINDINGS) {
+    body += `; ...and ${lines.length - MAX_BODY_FINDINGS} more`;
+  }
+  return body;
+}
+
 export async function handleScheduledCheck() {
   const dayOfWeek = new Date().getUTCDay();
   const isMonday = dayOfWeek === 1;
@@ -45,6 +57,7 @@ export async function handleScheduledCheck() {
         category: "maintenance",
         severity: severityFromColor(message.attachments?.[0]?.color),
         title: `${activeChecks[i].name}: ${findings.length} finding(s)`,
+        body: findingsBody(activeChecks[i].module, findings),
       });
     } else {
       console.log(`No ${activeChecks[i].name} findings`);

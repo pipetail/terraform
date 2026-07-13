@@ -38,6 +38,15 @@ export async function check(regions) {
   return warnings;
 }
 
+export function summarize(warnings) {
+  return warnings.map((w) => {
+    const status = w.daysRemaining <= 0
+      ? `expired ${w.expiry}`
+      : `expires ${w.expiry} (${w.daysRemaining} days)`;
+    return `${w.domain} (${w.region}): ${status}, renewal ${w.renewalEligibility}`;
+  });
+}
+
 export function format(warnings) {
   const expired = warnings.filter((w) => w.daysRemaining <= 0);
   const expiring = warnings.filter((w) => w.daysRemaining > 0);

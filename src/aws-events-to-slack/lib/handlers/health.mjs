@@ -62,7 +62,12 @@ export async function handleHealthEvent(event) {
     ],
   });
 
-  logSlackForward({ category: "health", severity: severityFromColor(color), title: summary });
+  let logBody = `${service} ${eventTypeCode} (${statusCode}) in ${region}: ${description.replace(/\s+/g, " ").slice(0, 300)}`;
+  if (affectedEntities.length > 0) {
+    logBody += ` — affected: ${affectedEntities.join(", ")}`;
+  }
+
+  logSlackForward({ category: "health", severity: severityFromColor(color), title: summary, body: logBody });
 
   return { statusCode: 200, body: "OK" };
 }

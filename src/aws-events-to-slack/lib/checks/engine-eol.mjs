@@ -109,6 +109,13 @@ function checkEolDate(eolEntry, now) {
   return null;
 }
 
+export function summarize(warnings) {
+  return warnings.map((w) => {
+    const status = w.severity === "expired" ? "EXPIRED" : `${w.monthsRemaining} month(s) remaining`;
+    return `${w.name} ${w.engine} ${w.version} (${w.region}): EOL ${w.eolDate}, ${status}, upgrade to ${w.successor}`;
+  });
+}
+
 export function format(warnings) {
   const urgent = warnings.filter((w) => w.severity === "expired" || w.severity === "urgent");
   const info = warnings.filter((w) => w.severity === "warning");
