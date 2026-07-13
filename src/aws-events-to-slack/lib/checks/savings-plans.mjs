@@ -31,6 +31,15 @@ export async function check() {
   return warnings;
 }
 
+export function summarize(warnings) {
+  return warnings.map((w) => {
+    const status = w.daysRemaining <= 0
+      ? `expired ${w.endDate}`
+      : `expires ${w.endDate} (${w.daysRemaining} days)`;
+    return `${w.id} ${w.type}: ${status}, commitment ${w.commitment} ${w.currency}/hr`;
+  });
+}
+
 export function format(warnings) {
   const expired = warnings.filter((w) => w.daysRemaining <= 0);
   const expiring = warnings.filter((w) => w.daysRemaining > 0);

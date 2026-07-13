@@ -42,6 +42,18 @@ export async function check(regions) {
   return allActions;
 }
 
+export function summarize(actions) {
+  return actions.map((action) => {
+    const groupId = action.ReplicationGroupId || action.CacheClusterId || "unknown";
+    const severity = action.ServiceUpdateSeverity || "unknown";
+    const updateName = action.ServiceUpdateName || "unknown";
+    const applyBy = action.ServiceUpdateRecommendedApplyByDate
+      ? new Date(action.ServiceUpdateRecommendedApplyByDate).toISOString().split("T")[0]
+      : "N/A";
+    return `${groupId} (${action.Region}): ${updateName} severity ${severity}, apply by ${applyBy}`;
+  });
+}
+
 export function format(actions) {
   let text = `:calendar: ElastiCache Pending Updates\n\n${actions.length} pending update(s):\n`;
 

@@ -91,6 +91,7 @@ export function severityFromColor(color) {
 
 // Structured line parsed by the pipetail.cloud portal to build a timeline of
 // forwarded events — emit exactly once after each successful postToSlack.
-export function logSlackForward({ category, severity, title }) {
-  console.log(JSON.stringify({ evt: "slack_forward", ts: new Date().toISOString(), category, severity, title }));
+// body is optional plain-text detail of what was forwarded (no Slack markup).
+export function logSlackForward({ category, severity, title, body }) {
+  console.log(JSON.stringify({ evt: "slack_forward", ts: new Date().toISOString(), category, severity, title, ...(body ? { body } : {}) }));
 }

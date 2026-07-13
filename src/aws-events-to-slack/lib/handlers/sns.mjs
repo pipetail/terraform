@@ -40,6 +40,7 @@ export async function handleSnsEvent(event) {
       category: "database",
       severity: severityFromColor(message.attachments?.[0]?.color),
       title: message.text,
+      body: rdsLogBody(snsMessage),
     });
     return { statusCode: 200, body: "OK" };
   }
@@ -50,8 +51,57 @@ export async function handleSnsEvent(event) {
     category: snsCategory(snsRecord.TopicArn),
     severity: severityFromColor(message.attachments?.[0]?.color),
     title: message.text,
+    body: budgetLogBody(snsMessage, snsSubject),
   });
   return { statusCode: 200, body: "OK" };
+}
+
+// Plain-text detail for the slack_forward log line (no Slack markup).
+function rdsLogBody(rdsEvent) {
+  const eventMessage = rdsEvent["Event Message"] || "Unknown event";
+  const sourceId = rdsEvent["Source ID"] || "Unknown";
+  const region = extractRegionFromArn(rdsEvent["Source ARN"] || "");
+  const eventTime = rdsEvent["Event Time"];
+  let body = `${sourceId}${region ? ` (${region})` : ""}: ${eventMessage}`;
+  if (eventTime) body += ` at ${eventTime}`;
+  return body;
+}
+
+function budgetLogBody(data, subject) {
+  if (subject?.includes("Budget") || data.budgetName) {
+    const budgetName = data.budgetName || "Unknown Budget";
+    const limit = data.budgetLimit?.amount
+      ? `${data.budgetLimit.amount} ${data.budgetLimit.unit}`
+      : "N/A";
+    const actual = data.actualAmount?.amount
+      ? `${parseFloat(data.actualAmount.amount).toFixed(2)} ${data.actualAmount.unit}`
+      : "N/A";
+    const threshold = data.thresholdAmount?.amount
+      ? `${parseFloat(data.thresholdAmount.amount).toFixed(2)} ${data.thresholdAmount.unit}`
+      : "N/A";
+    return `Budget ${budgetName} (${data.budgetType || "COST"}): actual ${actual}, limit ${limit}, threshold ${threshold}`;
+  }
+
+  if (data.anomalyId || subject?.includes("Anomaly")) {
+    const monitorName = data.monitorName || data.monitorArn?.split("/").pop() || "Unknown";
+    const totalImpact = data.impact?.totalImpact
+      ? `$${parseFloat(data.impact.totalImpact).toFixed(2)}`
+      : "N/A";
+    const totalActualSpend = data.impact?.totalActualSpend
+      ? `$${parseFloat(data.impact.totalActualSpend).toFixed(2)}`
+      : "N/A";
+    const totalExpectedSpend = data.impact?.totalExpectedSpend
+      ? `$${parseFloat(data.impact.totalExpectedSpend).toFixed(2)}`
+      : "N/A";
+    let body = `Monitor ${monitorName}: impact ${totalImpact} (actual ${totalActualSpend} vs expected ${totalExpectedSpend}), period ${data.anomalyStartDate || "N/A"} - ${data.anomalyEndDate || "Ongoing"}`;
+    const rootCause = (data.rootCauses || [])[0];
+    if (rootCause) {
+      body += `; top cause ${rootCause.service || "Unknown"} (${rootCause.region || "Unknown"}) ${rootCause.usageType || "Unknown"}`;
+    }
+    return body;
+  }
+
+  return JSON.stringify(data).slice(0, 300);
 }
 
 function snsCategory(topicArn = "") {

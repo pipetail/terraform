@@ -87,7 +87,12 @@ async function handleApiCall(event, detail) {
     ],
   });
 
-  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary });
+  let logBody = `${who} (${userType}) called ${eventName} in ${region} at ${eventTime} from ${sourceIP}`;
+  if (errorCode) {
+    logBody += ` — error ${errorCode}${errorMessage ? `: ${errorMessage}` : ""}`;
+  }
+
+  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary, body: logBody });
 
   return { statusCode: 200, body: "OK" };
 }
@@ -138,7 +143,10 @@ async function handleConsoleLogin(event, detail) {
     ],
   });
 
-  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary });
+  const plainReason = isRoot ? "Root account login" : "Login without MFA";
+  const logBody = `${plainReason}: ${who} (${userType}) result ${loginResult}, MFA ${mfaUsed ? "yes" : "no"}, from ${sourceIP} at ${eventTime}`;
+
+  logSlackForward({ category: "security", severity: severityFromColor(color), title: summary, body: logBody });
 
   return { statusCode: 200, body: "OK" };
 }

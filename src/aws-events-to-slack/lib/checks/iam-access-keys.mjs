@@ -31,6 +31,12 @@ export async function check() {
   return warnings;
 }
 
+export function summarize(warnings) {
+  return warnings.map((w) =>
+    `${w.userName} key ${w.accessKeyId.slice(0, 8)}...: created ${w.createDate} (${w.ageDays} days old)`,
+  );
+}
+
 export function format(warnings) {
   let text = `:key: IAM Access Key Age Report\n\n${warnings.length} key(s) older than ${ACCESS_KEY_WARNING_DAYS} days:\n`;
 

@@ -64,6 +64,12 @@ export async function check(regions) {
   return warnings;
 }
 
+export function summarize(warnings) {
+  return warnings.map((w) =>
+    `${w.type} ${w.id} ${w.size} GiB (${w.region}) created ${w.created}`,
+  );
+}
+
 export function format(warnings) {
   const volumes = warnings.filter((w) => w.type === "volume");
   const snapshots = warnings.filter((w) => w.type === "snapshot");
