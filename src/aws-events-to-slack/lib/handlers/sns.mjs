@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME, THRESHOLDS_URL } from "../config.mjs";
-import { postToSlack } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
 
 function thresholdsContextBlock() {
   if (!THRESHOLDS_URL) return [];
@@ -34,12 +34,30 @@ export async function handleSnsEvent(event) {
   }
 
   if (snsMessage["Event Source"] === "db" || snsMessage["Event Message"]) {
-    await postToSlack(formatRdsAlert(snsMessage));
+    const message = formatRdsAlert(snsMessage);
+    await postToSlack(message);
+    logSlackForward({
+      category: "database",
+      severity: severityFromColor(message.attachments?.[0]?.color),
+      title: message.text,
+    });
     return { statusCode: 200, body: "OK" };
   }
 
-  await postToSlack(formatBudgetMessage(snsMessage, snsSubject));
+  const message = formatBudgetMessage(snsMessage, snsSubject);
+  await postToSlack(message);
+  logSlackForward({
+    category: snsCategory(snsRecord.TopicArn),
+    severity: severityFromColor(message.attachments?.[0]?.color),
+    title: message.text,
+  });
   return { statusCode: 200, body: "OK" };
+}
+
+function snsCategory(topicArn = "") {
+  if (topicArn.includes("db-monitoring")) return "database";
+  if (topicArn.includes("error-alerts")) return "ops";
+  return "cost";
 }
 
 function parseBudgetText(text) {

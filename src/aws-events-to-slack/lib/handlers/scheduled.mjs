@@ -1,5 +1,5 @@
 import { AWS_REGIONS } from "../config.mjs";
-import { postToSlack } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
 import * as rdsMaintenance from "../checks/rds-maintenance.mjs";
 import * as elasticacheUpdates from "../checks/elasticache-updates.mjs";
 import * as engineEol from "../checks/engine-eol.mjs";
@@ -39,7 +39,13 @@ export async function handleScheduledCheck() {
 
     const findings = results[i].value;
     if (findings.length > 0) {
-      await postToSlack(activeChecks[i].module.format(findings));
+      const message = activeChecks[i].module.format(findings);
+      await postToSlack(message);
+      logSlackForward({
+        category: "maintenance",
+        severity: severityFromColor(message.attachments?.[0]?.color),
+        title: `${activeChecks[i].name}: ${findings.length} finding(s)`,
+      });
     } else {
       console.log(`No ${activeChecks[i].name} findings`);
     }

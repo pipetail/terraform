@@ -82,3 +82,15 @@ export function postToSlack(message) {
   }
   return postViaWebhook(message);
 }
+
+const COLOR_SEVERITY = { danger: "high", warning: "medium", good: "low" };
+
+export function severityFromColor(color) {
+  return COLOR_SEVERITY[color] || "medium";
+}
+
+// Structured line parsed by the pipetail.cloud portal to build a timeline of
+// forwarded events — emit exactly once after each successful postToSlack.
+export function logSlackForward({ category, severity, title }) {
+  console.log(JSON.stringify({ evt: "slack_forward", ts: new Date().toISOString(), category, severity, title }));
+}
