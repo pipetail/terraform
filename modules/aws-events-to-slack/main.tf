@@ -90,6 +90,7 @@ resource "aws_iam_role_policy" "lambda" {
           "elasticache:DescribeCacheClusters",
           "elasticache:DescribeReplicationGroups",
           "acm:ListCertificates",
+          "acm:DescribeCertificate",
           "eks:ListClusters",
           "eks:DescribeCluster",
           "savingsplans:DescribeSavingsPlans",
