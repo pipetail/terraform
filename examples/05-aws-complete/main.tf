@@ -44,9 +44,12 @@ terraform {
   }
 
   required_providers {
+    # terraform-aws-modules/eks 21.24.0 requires >= 6.52; an exact pin here went
+    # unsatisfiable the moment that module was bumped. Track 6.x instead so a
+    # module bump within the major cannot break init again.
     aws = {
       source  = "hashicorp/aws"
-      version = "= 6.46.0"
+      version = "~> 6.52"
     }
     random = {
       source  = "hashicorp/random"
