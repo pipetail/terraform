@@ -16,8 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Check for Bottlerocket AMI updates
     env:
-      K8S_VERSION: "1.27"
-      ARCHITECTURE: "x86_64"
       TERRAFORM_FILE: examples/05-aws-complete/eks.tf
 
     steps:
@@ -31,10 +29,41 @@ jobs:
           role-session-name: GithubActionsBottlerocketAMI
           aws-region: eu-west-1
 
+      # k8s version and architecture are read from the terraform file rather than
+      # hardcoded here, so this workflow cannot drift away from what is deployed
+      - name: Read pinned AMI and cluster config from Terraform
+        id: current-amis
+        run: |
+          extract() {
+            sed -n "s/.*$1[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\1/p" "${TERRAFORM_FILE}" | head -n1
+          }
+
+          CURRENT_AMI=$(extract worker_ami_id)
+          K8S_VERSION=$(extract k8s_version)
+          ARCHITECTURE=$(extract k8s_architecture)
+
+          for pair in "worker_ami_id:${CURRENT_AMI}" "k8s_version:${K8S_VERSION}" "k8s_architecture:${ARCHITECTURE}"; do
+            if [[ -z "${pair#*:}" ]]; then
+              echo "::error::could not read ${pair%%:*} from ${TERRAFORM_FILE}"
+              exit 1
+            fi
+          done
+
+          # the SSM parameter path uses arm64, while the AMI name uses aarch64
+          if [[ "${ARCHITECTURE}" == "aarch64" ]]; then
+            ARCHITECTURE="arm64"
+          fi
+
+          echo "current_ami=${CURRENT_AMI}" >> "$GITHUB_OUTPUT"
+          echo "k8s_version=${K8S_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "architecture=${ARCHITECTURE}" >> "$GITHUB_OUTPUT"
+
+          echo "Current AMI eu-west-1: ${CURRENT_AMI} (k8s ${K8S_VERSION}, ${ARCHITECTURE})"
+
       - name: Get latest Bottlerocket AMI ID
         id: get-amis
         run: |
-          SSM_PATH="/aws/service/bottlerocket/aws-k8s-${K8S_VERSION}/${ARCHITECTURE}/latest/image_id"
+          SSM_PATH="/aws/service/bottlerocket/aws-k8s-${{ steps.current-amis.outputs.k8s_version }}/${{ steps.current-amis.outputs.architecture }}/latest/image_id"
 
           LATEST_AMI=$(aws ssm get-parameter \
             --name "${SSM_PATH}" \
@@ -53,16 +82,9 @@ jobs:
             --region eu-west-1 \
             --query "Images[0].Name" \
             --output text)
-          VERSION=$(echo "${AMI_NAME}" | grep -oP 'v\d+\.\d+\.\d+')
+          VERSION=$(echo "${AMI_NAME}" | sed -n 's/.*-\(v[0-9]*\.[0-9]*\.[0-9]*\)-.*/\1/p')
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Bottlerocket version: ${VERSION}"
-
-      - name: Get current AMI ID from Terraform
-        id: current-amis
-        run: |
-          CURRENT_AMI=$(grep -m1 'worker_ami_id' "${TERRAFORM_FILE}" | grep -oP 'ami-[a-z0-9]+')
-          echo "current_ami=${CURRENT_AMI}" >> "$GITHUB_OUTPUT"
-          echo "Current AMI eu-west-1: ${CURRENT_AMI}"
 
       - name: Check if update is needed
         id: check-update
@@ -75,13 +97,6 @@ jobs:
             echo "update_needed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Update AMI ID in Terraform
-        if: steps.check-update.outputs.update_needed == 'true'
-        run: |
-          sed -i "s/${{ steps.current-amis.outputs.current_ami }}/${{ steps.get-amis.outputs.latest_ami }}/" "${TERRAFORM_FILE}"
-          echo "Updated AMI ID in ${TERRAFORM_FILE}"
-          git diff "${TERRAFORM_FILE}"
-
       - name: Get current Bottlerocket version
         if: steps.check-update.outputs.update_needed == 'true'
         id: current-version
@@ -91,9 +106,19 @@ jobs:
             --region eu-west-1 \
             --query "Images[0].Name" \
             --output text)
-          CURRENT_VERSION=$(echo "${CURRENT_AMI_NAME}" | grep -oP 'v\d+\.\d+\.\d+')
+          CURRENT_VERSION=$(echo "${CURRENT_AMI_NAME}" | sed -n 's/.*-\(v[0-9]*\.[0-9]*\.[0-9]*\)-.*/\1/p')
           echo "current_version=${CURRENT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Current Bottlerocket version: ${CURRENT_VERSION}"
+
+      - name: Update AMI ID in Terraform
+        if: steps.check-update.outputs.update_needed == 'true'
+        run: |
+          sed -i \
+            -e "s/${{ steps.current-amis.outputs.current_ami }}/${{ steps.get-amis.outputs.latest_ami }}/" \
+            -e "s/bottlerocket ${{ steps.current-version.outputs.current_version }}/bottlerocket ${{ steps.get-version.outputs.version }}/" \
+            "${TERRAFORM_FILE}"
+          echo "Updated AMI ID in ${TERRAFORM_FILE}"
+          git diff "${TERRAFORM_FILE}"
 
       - name: Create Pull Request
         if: steps.check-update.outputs.update_needed == 'true'

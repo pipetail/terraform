@@ -31,6 +31,19 @@ variable "k8s_architecture" {
   description = "cpu architecture to use with k8s nodes"
 }
 
+// pinned explicitly rather than resolved via a most_recent data source so that
+// node rollouts happen through a reviewed PR (see .github/workflows/update-bottlerocket-ami.yaml)
+// instead of silently on the next apply after a new Bottlerocket release.
+variable "worker_ami_id" {
+  type        = string
+  description = "Bottlerocket AMI ID to use for the k8s worker nodes, must match k8s_version and k8s_architecture"
+
+  validation {
+    condition     = can(regex("^ami-[0-9a-f]+$", var.worker_ami_id))
+    error_message = "worker_ami_id must be a valid AMI ID, e.g. ami-08d4abbd395927beb."
+  }
+}
+
 variable "kms_key_administrators" {
   type        = list(string)
   default     = []
