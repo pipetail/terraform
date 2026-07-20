@@ -4,10 +4,17 @@ name: lambda-release
 permissions:
   contents: write
 
+# A version bump landing on master publishes the release; the tag is created by
+# `gh release create --target` below, so there is no separate tagging step and no
+# push-a-tag trigger. Lambda source landing *without* a bump fails this workflow
+# on purpose: consumers pin an exact version, so an unbumped change never reaches
+# any deployment, and that failure is otherwise completely silent.
 on:
   push:
-    tags:
-      - 'aws-events-to-slack-v*'
+    branches:
+      - master
+    paths:
+      - 'src/aws-events-to-slack/**'
   workflow_dispatch:
     inputs:
       version:
@@ -22,31 +29,63 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0 # need history to diff the version against the previous commit
 
       - name: Resolve version and tag
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            VERSION="${GITHUB_REF_NAME#aws-events-to-slack-v}"
+          set -euo pipefail
+          PKG=src/aws-events-to-slack/package.json
+          VERSION="$(jq -r .version "$PKG")"
+          RELEASE=true
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            [ -z "${{ inputs.version }}" ] || VERSION="${{ inputs.version }}"
           else
-            VERSION="${{ inputs.version }}"
-            [ -n "$VERSION" ] || VERSION="$(jq -r .version src/aws-events-to-slack/package.json)"
+            # A new branch or force-push can report an unreachable "before" SHA.
+            if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BEFORE="$(git rev-parse HEAD^ 2>/dev/null || echo "")"
+            fi
+
+            if [ -z "$BEFORE" ]; then
+              echo "::notice::No usable base commit to diff against; skipping release."
+              RELEASE=false
+            elif ! git diff --name-only "$BEFORE" HEAD -- src/aws-events-to-slack \
+                 | grep -qE '\.(mjs|js|json)$'; then
+              # Only files that end up inside the published zip warrant a release.
+              echo "::notice::No packaged Lambda files changed; skipping release."
+              RELEASE=false
+            else
+              PREVIOUS="$(git show "${BEFORE}:${PKG}" 2>/dev/null | jq -r '.version // empty' || echo "")"
+              if [ -n "$PREVIOUS" ] && [ "$VERSION" = "$PREVIOUS" ]; then
+                echo "::error::src/aws-events-to-slack changed but ${PKG} is still ${VERSION}. Consumers pin an exact version, so this change would never reach them. Bump the version."
+                exit 1
+              fi
+            fi
           fi
+
           {
             echo "VERSION=${VERSION}"
             echo "TAG=aws-events-to-slack-v${VERSION}"
+            echo "RELEASE=${RELEASE}"
           } >> "$GITHUB_ENV"
 
       - name: Setup Node.js
+        if: env.RELEASE == 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
 
       - name: Package Lambda (reproducible zip)
+        if: env.RELEASE == 'true'
         run: |
           chmod +x scripts/package-lambdas.sh
           ./scripts/package-lambdas.sh aws-events-to-slack
 
       - name: Build versioned asset + checksum
+        if: env.RELEASE == 'true'
         run: |
           cp "src/aws-events-to-slack.zip" "aws-events-to-slack-${VERSION}.zip"
           # source_code_hash expects base64 of the raw SHA256 digest (same as filebase64sha256)
@@ -54,6 +93,7 @@ jobs:
             | openssl base64 -A > "aws-events-to-slack-${VERSION}.zip.b64sha256"
 
       - name: Create GitHub release
+        if: env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
