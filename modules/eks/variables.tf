@@ -15,13 +15,13 @@ variable "control_plane_subnets" {
 
 variable "k8s_version" {
   type        = string
-  default     = "1.27"
+  default     = "1.36"
   description = "EKS / Kubernetes version"
 }
 
 variable "k8s_addon_version" {
   type        = string
-  default     = "1.27"
+  default     = "1.36"
   description = "EKS addons version"
 }
 
