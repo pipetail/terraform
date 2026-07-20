@@ -43,6 +43,7 @@ export const EKS_EOL_DATES = {
 export const EOL_WARNING_MONTHS = parseInt(process.env.EOL_WARNING_MONTHS) || 6;
 export const EOL_URGENT_MONTHS = parseInt(process.env.EOL_URGENT_MONTHS) || 3;
 export const CERT_EXPIRY_WARNING_DAYS = parseInt(process.env.CERT_EXPIRY_WARNING_DAYS) || 30;
+export const CERT_EXPIRY_URGENT_DAYS = parseInt(process.env.CERT_EXPIRY_URGENT_DAYS) || 7;
 export const SAVINGS_PLAN_WARNING_DAYS = parseInt(process.env.SAVINGS_PLAN_WARNING_DAYS) || 60;
 export const ACCESS_KEY_WARNING_DAYS = parseInt(process.env.ACCESS_KEY_WARNING_DAYS) || 90;
 export const EBS_SNAPSHOT_AGE_DAYS = parseInt(process.env.EBS_SNAPSHOT_AGE_DAYS) || 180;
