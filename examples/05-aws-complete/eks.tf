@@ -6,11 +6,11 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  k8s_version      = "1.27"
+  k8s_version      = "1.36"
   k8s_architecture = "arm64"
 
-  // bottlerocket v1.43.0, bumped by the update-bottlerocket-ami workflow
-  worker_ami_id = "ami-08d4abbd395927beb"
+  // bottlerocket v1.62.1, bumped by the update-bottlerocket-ami workflow
+  worker_ami_id = "ami-0db30b8c57f5ab16a"
 
   kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
