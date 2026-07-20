@@ -9,6 +9,9 @@ module "eks" {
   k8s_version      = "1.27"
   k8s_architecture = "arm64"
 
+  // bottlerocket v1.43.0, bumped by the update-bottlerocket-ami workflow
+  worker_ami_id = "ami-08d4abbd395927beb"
+
   kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
 

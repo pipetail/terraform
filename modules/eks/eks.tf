@@ -6,7 +6,6 @@ locals {
 
   is_arm64              = contains(["arm64", "aarch64"], var.k8s_architecture)
   bottlerocket_ami_type = local.is_arm64 ? "BOTTLEROCKET_ARM_64" : "BOTTLEROCKET_x86_64"
-  bottlerocket_ami_arch = local.is_arm64 ? "aarch64" : "x86_64"
 }
 
 module "eks" {
@@ -69,7 +68,7 @@ module "eks" {
       }
 
       ami_type                   = local.bottlerocket_ami_type
-      ami_id                     = data.aws_ami.bottlerocket_ami.id
+      ami_id                     = var.worker_ami_id
       enable_bootstrap_user_data = true
 
       min_size     = v.asg_min_size
