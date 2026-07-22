@@ -18,7 +18,7 @@ const EVENT_CATEGORIES = {
   backup: { emoji: ":floppy_disk:", color: "good" },
   recovery: { emoji: ":white_check_mark:", color: "good" },
   notification: { emoji: ":bell:", color: "#439FE0" },
-  default: { emoji: ":database:", color: "#439FE0" },
+  default: { emoji: ":cd:", color: "#439FE0" },
 };
 
 export async function handleSnsEvent(event) {

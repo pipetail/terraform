@@ -67,7 +67,7 @@ export function format(warnings) {
   const urgent = warnings.filter((w) => w.severity === "expired" || w.severity === "urgent");
   const info = warnings.filter((w) => w.severity === "warning");
 
-  let text = `:kubernetes: EKS Version EOL Report\n\n${warnings.length} cluster(s) approaching or past EOL:\n`;
+  let text = `:wheel_of_dharma: EKS Version EOL Report\n\n${warnings.length} cluster(s) approaching or past EOL:\n`;
 
   if (urgent.length > 0) {
     text += `\n:rotating_light: *Urgent* (≤${EOL_URGENT_MONTHS} months or expired):\n`;
@@ -91,7 +91,7 @@ export function format(warnings) {
   text += `\n\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
 
   return {
-    text: `:kubernetes: EKS EOL Report - ${warnings.length} warning(s)`,
+    text: `:wheel_of_dharma: EKS EOL Report - ${warnings.length} warning(s)`,
     blocks: [
       {
         type: "section",
