@@ -1,6 +1,6 @@
 {
   "name": "aws-events-to-slack",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "type": "module",
   "description": "Forward AWS events, maintenance alerts, and budget notifications to Slack",
   "main": "index.mjs"
