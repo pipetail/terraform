@@ -99,6 +99,7 @@ resource "aws_iam_role_policy" "lambda" {
           "ec2:DescribeVolumes",
           "ec2:DescribeSnapshots",
           "ec2:DescribeImages",
+          "ec2:DescribeInstances",
         ]
         Resource = "*"
       }

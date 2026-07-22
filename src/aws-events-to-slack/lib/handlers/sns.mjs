@@ -346,7 +346,12 @@ function extractAccountIdFromArn(arn) {
 }
 
 function getEventCategory(eventMessage) {
-  const message = (eventMessage || "").toLowerCase();
+  // RDS appends "See the database error log for details." to many non-failure
+  // messages (e.g. successful upgrades); strip it before keyword matching so
+  // the literal "error" doesn't trigger the failure category.
+  const message = (eventMessage || "")
+    .toLowerCase()
+    .replace(/see the database error log for details\.?/g, "");
 
   if (message.includes("failover") || message.includes("failed over")) {
     return EVENT_CATEGORIES.failover;
