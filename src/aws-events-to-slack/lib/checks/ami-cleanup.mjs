@@ -1,5 +1,24 @@
-import { EC2Client, DescribeImagesCommand } from "@aws-sdk/client-ec2";
+import { EC2Client, DescribeImagesCommand, DescribeInstancesCommand } from "@aws-sdk/client-ec2";
 import { AWS_ACCOUNT_NAME, AMI_STALE_AGE_DAYS } from "../config.mjs";
+
+// AMIs still booting an instance (any state, including stopped) are not safe to
+// delete, regardless of age — skip them to avoid false positives.
+async function getInUseImageIds(client) {
+  const inUse = new Set();
+  let nextToken;
+  do {
+    const response = await client.send(
+      new DescribeInstancesCommand({ MaxResults: 1000, NextToken: nextToken }),
+    );
+    for (const reservation of response.Reservations || []) {
+      for (const instance of reservation.Instances || []) {
+        if (instance.ImageId) inUse.add(instance.ImageId);
+      }
+    }
+    nextToken = response.NextToken;
+  } while (nextToken);
+  return inUse;
+}
 
 export async function check(regions) {
   const stale = [];
@@ -9,6 +28,7 @@ export async function check(regions) {
     const client = new EC2Client({ region });
     const response = await client.send(new DescribeImagesCommand({ Owners: ["self"] }));
     const images = response.Images || [];
+    const inUse = await getInUseImageIds(client);
 
     const groups = new Map();
     for (const image of images) {
@@ -22,6 +42,7 @@ export async function check(regions) {
       if (groupImages.length <= 1) continue;
       groupImages.sort((a, b) => new Date(b.CreationDate) - new Date(a.CreationDate));
       for (const image of groupImages.slice(1)) {
+        if (inUse.has(image.ImageId)) continue;
         const createdAt = new Date(image.CreationDate);
         if (createdAt > staleCutoff) continue;
         const ageDays = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
