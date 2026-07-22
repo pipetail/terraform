@@ -5,7 +5,7 @@ locals {
 module "terraform_state" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "4.11.0"
+  version = "5.15.1"
 
   bucket = local.state_bucket
 
