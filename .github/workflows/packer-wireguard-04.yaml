@@ -48,7 +48,7 @@ jobs:
 
       - name: Packer Validate
         working-directory: examples/04-aws-wireguard-vpn/packer
-        run: packer validate -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
+        run: packer validate -evaluate-datasources -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
 
   build:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

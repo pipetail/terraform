@@ -73,7 +73,7 @@ jobs:
       - name: Packer Validate
         if: steps.check-bot.outputs.skip != 'true'
         working-directory: ${{ inputs.packer_directory }}
-        run: packer validate -var-file=${{ inputs.pkvars_file }} ${{ inputs.pkr_file }}
+        run: packer validate -evaluate-datasources -var-file=${{ inputs.pkvars_file }} ${{ inputs.pkr_file }}
 
       - name: Packer Build
         if: steps.check-bot.outputs.skip != 'true'
