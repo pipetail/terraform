@@ -42,6 +42,12 @@ variable "state_bucket_force_destroy" {
   description = "Allow destroying the state bucket while it still holds objects. A destroy then removes every object version along with the bucket, so versioning does not keep the Terraform state recoverable. Leave disabled unless the bucket is genuinely disposable."
 }
 
+variable "state_bucket_kms_key_id" {
+  type        = string
+  default     = null
+  description = "KMS key ID, ARN or alias used to encrypt the state bucket with SSE-KMS. Leave null to keep SSE-S3 (AES256). Every principal that runs Terraform against this backend needs kms:Decrypt and kms:GenerateDataKey on the key, so grant that before pointing an existing bucket at a key, otherwise state reads start failing."
+}
+
 variable "dynamodb_point_in_time_recovery" {
   type        = bool
   default     = false

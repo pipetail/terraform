@@ -14,9 +14,11 @@ module "terraform_state" {
   server_side_encryption_configuration = {
     rule = {
       apply_server_side_encryption_by_default = {
-        // TODO: now for simplicity
-        sse_algorithm = "AES256"
+        sse_algorithm     = var.state_bucket_kms_key_id == null ? "AES256" : "aws:kms"
+        kms_master_key_id = var.state_bucket_kms_key_id
       }
+      // null rather than false so leaving the key unset produces no diff on existing buckets
+      bucket_key_enabled = var.state_bucket_kms_key_id == null ? null : true
     }
   }
 
