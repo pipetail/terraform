@@ -47,9 +47,13 @@ terraform {
     # terraform-aws-modules/eks 21.24.0 requires >= 6.52; an exact pin here went
     # unsatisfiable the moment that module was bumped. Track 6.x instead so a
     # module bump within the major cannot break init again.
+    # 6.57.0 fails every data.aws_caller_identity read with "reading STS Caller
+    # Identity ... StatusCode: 302, api error UnknownError". Reproduces on a bare
+    # config of four such data sources; 6.55.0 and 6.56.0 are fine. Drop the
+    # exclusion once a later release is confirmed good.
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.52"
+      version = "~> 6.52, != 6.57.0"
     }
     random = {
       source  = "hashicorp/random"
