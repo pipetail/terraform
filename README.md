@@ -297,8 +297,6 @@ terraform {
 
 The `aws-bootstrap` module still supports creating a DynamoDB table for backwards compatibility via `create_dynamodb_table = true`, but this is no longer the default.
 
-The state bucket refuses to be destroyed while it holds objects. Set `state_bucket_force_destroy = true` to opt in to deleting a populated bucket — that drops every object version with it, so the state history is gone for good.
-
 The `terraform-state-unlock.yaml` workflow runs daily to detect and remove stale locks (locks older than 4 hours are considered stale and are automatically removed). Manual unlock is also available via workflow_dispatch for emergency situations.
 
 ## State Migrations
