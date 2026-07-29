@@ -16,12 +16,6 @@ module "eks" {
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
 
   allow_ingress = {
-    "http" = {
-      source_security_group_id = module.sg_alb.security_group_id
-      port                     = local.ingress_ports["http"]
-      protocol                 = "tcp"
-    },
-
     "https" = {
       source_security_group_id = module.sg_alb.security_group_id
       port                     = local.ingress_ports["https"]
