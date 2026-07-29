@@ -1,31 +1,30 @@
 locals {
-  nginx_ingress_ports = {
-    http  = 30080
+  ingress_ports = {
     https = 30443
   }
 }
 
-resource "helm_release" "nginx_ingress" {
-  name = "nginx-ingress"
+resource "helm_release" "traefik" {
+  name = "traefik"
 
-  namespace        = "nginx-ingress"
+  namespace        = "traefik"
   create_namespace = true
 
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  version    = "4.6.1"
+  repository = "https://traefik.github.io/charts"
+  chart      = "traefik"
+  version    = "41.0.2"
 
   wait   = true
   atomic = true
 
   values = [
-    templatefile("${path.module}/helm-values/nginx-ingress.yaml", {
+    templatefile("${path.module}/helm-values/traefik.yaml.tftpl", {
       replica_count  = 3
       memory_request = "128Mi"
       memory_limit   = "128Mi"
       cpu_request    = "100m"
-      http_nodeport  = local.nginx_ingress_ports.http
-      https_nodeport = local.nginx_ingress_ports.https
+      https_nodeport = local.ingress_ports.https
+      vpc_cidr       = module.vpc.vpc_cidr_block
     })
   ]
 }

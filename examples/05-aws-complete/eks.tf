@@ -18,13 +18,13 @@ module "eks" {
   allow_ingress = {
     "http" = {
       source_security_group_id = module.sg_alb.security_group_id
-      port                     = local.nginx_ingress_ports["http"]
+      port                     = local.ingress_ports["http"]
       protocol                 = "tcp"
     },
 
     "https" = {
       source_security_group_id = module.sg_alb.security_group_id
-      port                     = local.nginx_ingress_ports["https"]
+      port                     = local.ingress_ports["https"]
       protocol                 = "tcp"
     },
   }
@@ -37,7 +37,7 @@ module "eks" {
       asg_min_size  = 1
       subnets       = module.vpc.private_subnets
 
-      target_group_arns = [aws_alb_target_group.nginx_ingress.arn]
+      target_group_arns = [aws_alb_target_group.ingress.arn]
 
       set_taint     = false
       capacity_type = "ON_DEMAND"

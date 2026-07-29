@@ -35,21 +35,28 @@ module "sg_alb" {
   ]
 }
 
-resource "aws_alb_target_group" "nginx_ingress" {
-  #checkov:skip=CKV_AWS_378: HTTP is used between ALB and backend, HTTPS terminates at ALB
-  name_prefix = "nginx"
-  port        = local.nginx_ingress_ports["http"]
-  protocol    = "HTTP"
+resource "aws_alb_target_group" "ingress" {
+  name_prefix = "ingr"
+  port        = local.ingress_ports["https"]
+  protocol    = "HTTPS"
   target_type = "instance"
   vpc_id      = module.vpc.vpc_id
 
+  // Traefik serves ping@internal here via ingressRoute.healthcheck; it has no
+  // /healthz. The ALB does not validate the backend certificate, so Traefik's
+  // built-in self-signed cert is sufficient for this hop.
   health_check {
-    path                = "/healthz"
+    path                = "/ping"
+    protocol            = "HTTPS"
     healthy_threshold   = 5
     unhealthy_threshold = 2
     timeout             = 5
     interval            = 30
     matcher             = "200"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -87,10 +94,14 @@ module "elb_logs" {
   attach_deny_insecure_transport_policy = true
 }
 
-resource "aws_alb" "nginx_ingress" {
+resource "aws_alb" "ingress" {
   #checkov:skip=CKV2_AWS_28: do we need WAF? TODO!
   #checkov:skip=CKV_AWS_150: "Ensure that Load Balancer has deletion protection enabled": we don't want this here because we want to be able to destroy the whole stack
-  name               = "nginx-ingress"
+  // name_prefix rather than a fixed name: ALB names are unique per region, so a
+  // fixed name cannot be replaced without destroying the old one first, which
+  // means an outage on every rename. With a prefix the replacement is built
+  // alongside the old one and DNS cuts over after it is live.
+  name_prefix        = "ingr"
   internal           = false
   load_balancer_type = "application"
   subnets            = module.vpc.public_subnets
@@ -105,10 +116,14 @@ resource "aws_alb" "nginx_ingress" {
   enable_deletion_protection = false // you probably want this to be `true`
 
   drop_invalid_header_fields = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
-resource "aws_alb_listener" "nginx_ingress" {
-  load_balancer_arn = aws_alb.nginx_ingress.arn
+resource "aws_alb_listener" "ingress" {
+  load_balancer_arn = aws_alb.ingress.arn
   port              = "80"
   protocol          = "HTTP"
 
@@ -125,7 +140,7 @@ resource "aws_alb_listener" "nginx_ingress" {
 
 resource "aws_alb_listener" "https" {
   #checkov:skip=CKV_AWS_103:ELBSecurityPolicy-TLS13-1-2-2021-06 enforces TLS 1.2+ (false positive)
-  load_balancer_arn = aws_alb.nginx_ingress.arn
+  load_balancer_arn = aws_alb.ingress.arn
   port              = 443
   protocol          = "HTTPS"
   certificate_arn   = module.certificate.certificate_arn
@@ -137,7 +152,7 @@ resource "aws_alb_listener" "https" {
 
   #   default_action {
   #     type             = "forward"
-  #     target_group_arn = aws_alb_target_group.nginx_ingress.arn
+  #     target_group_arn = aws_alb_target_group.ingress.arn
   #   }
 
   default_action {
@@ -150,12 +165,12 @@ resource "aws_alb_listener" "https" {
   }
 }
 
-resource "aws_alb_listener_rule" "nginx_ingress" {
+resource "aws_alb_listener_rule" "ingress" {
   listener_arn = aws_alb_listener.https.arn
 
   action {
     type             = "forward"
-    target_group_arn = aws_alb_target_group.nginx_ingress.arn
+    target_group_arn = aws_alb_target_group.ingress.arn
   }
 
   condition {
