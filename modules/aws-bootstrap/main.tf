@@ -26,6 +26,8 @@ module "terraform_state" {
     enabled = true
   }
 
+  logging = var.state_bucket_logging
+
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true

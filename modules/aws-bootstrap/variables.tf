@@ -48,6 +48,12 @@ variable "state_bucket_kms_key_id" {
   description = "KMS key ID, ARN or alias used to encrypt the state bucket with SSE-KMS. Leave null to keep SSE-S3 (AES256). Every principal that runs Terraform against this backend needs kms:Decrypt and kms:GenerateDataKey on the key, so grant that before pointing an existing bucket at a key, otherwise state reads start failing."
 }
 
+variable "state_bucket_logging" {
+  type        = map(string)
+  default     = {}
+  description = "S3 server access logging for the state bucket, e.g. { target_bucket = \"my-log-bucket\", target_prefix = \"tf-state/\" }. The target bucket must already exist and allow log delivery. Empty map leaves access logging off."
+}
+
 variable "dynamodb_point_in_time_recovery" {
   type        = bool
   default     = false
