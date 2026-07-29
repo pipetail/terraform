@@ -9,8 +9,7 @@ module "terraform_state" {
 
   bucket = local.state_bucket
 
-  # Allow deletion of non-empty bucket
-  force_destroy = true
+  force_destroy = var.state_bucket_force_destroy
 
   server_side_encryption_configuration = {
     rule = {

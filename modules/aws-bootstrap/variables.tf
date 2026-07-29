@@ -36,6 +36,12 @@ variable "state_bucket_tags" {
   description = "Tags to associate with the bucket storing the Terraform state files"
 }
 
+variable "state_bucket_force_destroy" {
+  type        = bool
+  default     = false
+  description = "Allow destroying the state bucket while it still holds objects. A destroy then removes every object version along with the bucket, so versioning does not keep the Terraform state recoverable. Leave disabled unless the bucket is genuinely disposable."
+}
+
 variable "dynamodb_point_in_time_recovery" {
   type        = bool
   default     = false
