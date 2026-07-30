@@ -18,6 +18,26 @@ moved {
   to   = aws_alb_target_group.nginx_ingress
 }
 
+moved {
+  from = aws_alb.nginx_ingress
+  to   = aws_alb.ingress
+}
+
+moved {
+  from = aws_alb_target_group.nginx_ingress
+  to   = aws_alb_target_group.ingress
+}
+
+moved {
+  from = aws_alb_listener.nginx_ingress
+  to   = aws_alb_listener.ingress
+}
+
+moved {
+  from = aws_alb_listener_rule.nginx_ingress
+  to   = aws_alb_listener_rule.ingress
+}
+
 # --- moved: module rename ---
 
 moved {

@@ -1,0 +1,60 @@
+deployment:
+  replicas: ${replica_count}
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9100"
+    prometheus.io/scheme: "http"
+    log: "true"
+  podLabels:
+    app: traefik
+
+resources:
+  limits:
+    memory: ${memory_limit}
+  requests:
+    cpu: ${cpu_request}
+    memory: ${memory_request}
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+
+service:
+  # Type and externalTrafficPolicy live under service.spec in chart v3x+, not at
+  # the top of service. A top-level service.type is accepted by the schema and
+  # then ignored, silently leaving the chart default of LoadBalancer, which
+  # provisions a second internet-facing load balancer next to the ALB.
+  spec:
+    type: NodePort
+    externalTrafficPolicy: Cluster
+
+ports:
+  # The ALB forwards only to websecure. Leaving web on the Service would publish
+  # a NodePort with no security-group path to it.
+  web:
+    expose:
+      default: false
+  websecure:
+    nodePort: ${https_nodeport}
+    http:
+      tls:
+        # The ALB terminates public TLS and re-encrypts to this entrypoint using
+        # Traefik's built-in self-signed certificate. ALB target groups never
+        # validate the backend certificate, so no real cert is needed here.
+        enabled: true
+    forwardedHeaders:
+      # Traefik drops X-Forwarded-* from untrusted senders. Without the VPC range
+      # here, backends see the ALB's address as the client IP, breaking IP-based
+      # routing and rate limiting.
+      trustedIPs:
+        - ${vpc_cidr}
+
+ingressRoute:
+  # Traefik has no /healthz. This publishes ping@internal at /ping on websecure,
+  # which is what the ALB target group probes; without it ping stays on the
+  # unexposed traefik entrypoint and every target fails its health check.
+  healthcheck:
+    enabled: true
+    entryPoints:
+      - websecure

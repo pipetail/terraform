@@ -11,8 +11,8 @@ resource "aws_route53_record" "api" {
   type    = each.value
 
   alias {
-    name                   = aws_alb.nginx_ingress.dns_name
-    zone_id                = aws_alb.nginx_ingress.zone_id
+    name                   = aws_alb.ingress.dns_name
+    zone_id                = aws_alb.ingress.zone_id
     evaluate_target_health = false
   }
 }
