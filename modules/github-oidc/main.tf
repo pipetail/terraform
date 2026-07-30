@@ -1,3 +1,13 @@
+locals {
+  // Defaults to the default branch only. Anything wider — PR runs, other
+  // branches, environments — has to be named by the caller, so widening the
+  // trust is a visible diff rather than a silent property of the module.
+  allowed_subjects = coalesce(
+    var.allowed_subjects,
+    ["repo:${var.repository_name}:ref:refs/heads/master"],
+  )
+}
+
 // https://github.com/aws-actions/configure-aws-credentials
 resource "aws_iam_openid_connect_provider" "github" {
   client_id_list = [
@@ -38,9 +48,12 @@ resource "aws_iam_role" "github_actions" {
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
-
-          StringLike = {                                                                // StringLike is important here for any wildcards on the line below
-            "token.actions.githubusercontent.com:sub" = "repo:${var.repository_name}:*" // the last '*' allows ALL BRANCHES
+          // StringEquals, not StringLike: a pattern here is what lets any branch,
+          // tag or PR of the repo mint credentials for this role. Subjects must be
+          // enumerated exactly.
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = local.allowed_subjects
           }
         }
       }

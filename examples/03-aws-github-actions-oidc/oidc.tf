@@ -2,7 +2,6 @@
 # module "github_oidc" {
 #   source = "../../modules/github-oidc"
 
-#   # you can easily do `repository_name = "pipetail/terraform-*"` to match all repos that start with `terraform-` prefix
 #   repository_name = "pipetail/terraform"
 
 #   # you can use Managed Policy Arns to attach to the created role
@@ -14,6 +13,14 @@ module "github_oidc_custom_policy" {
   source = "../../modules/github-oidc"
 
   repository_name = "pipetail/terraform"
+
+  # Subjects are matched exactly, so every ref that needs credentials is listed.
+  # pull_request is here because the plan workflows run on PRs; dropping it is
+  # what a dedicated read-only plan role would allow.
+  allowed_subjects = [
+    "repo:pipetail/terraform:ref:refs/heads/master",
+    "repo:pipetail/terraform:pull_request",
+  ]
 
   # we don't use managed_policy_arns here to specify a custom policy
 }
