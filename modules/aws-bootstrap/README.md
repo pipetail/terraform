@@ -51,7 +51,7 @@ account-specific.
 
 ## State locking
 
-S3 native locking (`use_lockfile = true`, Terraform 1.6+) is the default path and needs no
+S3 native locking (`use_lockfile = true`, Terraform 1.10+) is the default path and needs no
 table — `create_dynamodb_table` is `false`. Set it to `true` only for backends still using
 `dynamodb_table`. The default table name is not prefixed, so two bootstrapped stacks in the
 same account and region will fight over `terraform-state-lock` unless you override
@@ -69,7 +69,7 @@ is genuinely disposable.
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.10.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.83, < 7.0.0 |
 
 ## Providers
@@ -95,7 +95,7 @@ is genuinely disposable.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_bucket_purpose"></a> [bucket\_purpose](#input\_bucket\_purpose) | Name to identify the bucket's purpose | `string` | `"tf-state"` | no |
-| <a name="input_create_dynamodb_table"></a> [create\_dynamodb\_table](#input\_create\_dynamodb\_table) | Create DynamoDB table for Terraform state locking. Not needed when using S3 native locking (use\_lockfile = true in backend config, requires Terraform 1.6+). | `bool` | `false` | no |
+| <a name="input_create_dynamodb_table"></a> [create\_dynamodb\_table](#input\_create\_dynamodb\_table) | Create DynamoDB table for Terraform state locking. Not needed when using S3 native locking (use\_lockfile = true in backend config, requires Terraform 1.10+). | `bool` | `false` | no |
 | <a name="input_dynamodb_point_in_time_recovery"></a> [dynamodb\_point\_in\_time\_recovery](#input\_dynamodb\_point\_in\_time\_recovery) | Point-in-time recovery options | `bool` | `false` | no |
 | <a name="input_dynamodb_table_name"></a> [dynamodb\_table\_name](#input\_dynamodb\_table\_name) | Name of the DynamoDB Table for locking Terraform state. | `string` | `"terraform-state-lock"` | no |
 | <a name="input_dynamodb_table_tags"></a> [dynamodb\_table\_tags](#input\_dynamodb\_table\_tags) | Tags of the DynamoDB Table for locking Terraform state. | `map(string)` | <pre>{<br/>  "Automation": "Terraform",<br/>  "Name": "terraform-state-lock"<br/>}</pre> | no |
