@@ -82,6 +82,7 @@ is genuinely disposable.
 
 | Name | Source | Version |
 |------|--------|---------|
+| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 4.11.0 |
 | <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 4.11.0 |
 
 ## Resources
@@ -96,14 +97,16 @@ is genuinely disposable.
 |------|-------------|------|---------|:--------:|
 | <a name="input_bucket_purpose"></a> [bucket\_purpose](#input\_bucket\_purpose) | Name to identify the bucket's purpose | `string` | `"tf-state"` | no |
 | <a name="input_create_dynamodb_table"></a> [create\_dynamodb\_table](#input\_create\_dynamodb\_table) | Create DynamoDB table for Terraform state locking. Not needed when using S3 native locking (use\_lockfile = true in backend config, requires Terraform 1.10+). | `bool` | `false` | no |
+| <a name="input_create_log_bucket"></a> [create\_log\_bucket](#input\_create\_log\_bucket) | Create a companion bucket to receive the state bucket's S3 server access logs. Ignored when state\_bucket\_logging is set. Disable only if access to Terraform state is already recorded elsewhere, e.g. by a CloudTrail S3 data event selector. | `bool` | `true` | no |
 | <a name="input_dynamodb_point_in_time_recovery"></a> [dynamodb\_point\_in\_time\_recovery](#input\_dynamodb\_point\_in\_time\_recovery) | Point-in-time recovery options | `bool` | `false` | no |
 | <a name="input_dynamodb_table_name"></a> [dynamodb\_table\_name](#input\_dynamodb\_table\_name) | Name of the DynamoDB Table for locking Terraform state. | `string` | `"terraform-state-lock"` | no |
 | <a name="input_dynamodb_table_tags"></a> [dynamodb\_table\_tags](#input\_dynamodb\_table\_tags) | Tags of the DynamoDB Table for locking Terraform state. | `map(string)` | <pre>{<br/>  "Automation": "Terraform",<br/>  "Name": "terraform-state-lock"<br/>}</pre> | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | Days to retain state bucket access logs before expiry. Only used when create\_log\_bucket is true. | `number` | `365` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Used as a name prefix for resources | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region. | `string` | n/a | yes |
 | <a name="input_state_bucket_force_destroy"></a> [state\_bucket\_force\_destroy](#input\_state\_bucket\_force\_destroy) | Allow destroying the state bucket while it still holds objects. A destroy then removes every object version along with the bucket, so versioning does not keep the Terraform state recoverable. Leave disabled unless the bucket is genuinely disposable. | `bool` | `false` | no |
 | <a name="input_state_bucket_kms_key_id"></a> [state\_bucket\_kms\_key\_id](#input\_state\_bucket\_kms\_key\_id) | KMS key ID, ARN or alias used to encrypt the state bucket with SSE-KMS. Leave null to keep SSE-S3 (AES256). Every principal that runs Terraform against this backend needs kms:Decrypt and kms:GenerateDataKey on the key, so grant that before pointing an existing bucket at a key, otherwise state reads start failing. | `string` | `null` | no |
-| <a name="input_state_bucket_logging"></a> [state\_bucket\_logging](#input\_state\_bucket\_logging) | S3 server access logging for the state bucket, e.g. { target\_bucket = "my-log-bucket", target\_prefix = "tf-state/" }. The target bucket must already exist and allow log delivery. Empty map leaves access logging off. | `map(string)` | `{}` | no |
+| <a name="input_state_bucket_logging"></a> [state\_bucket\_logging](#input\_state\_bucket\_logging) | S3 server access logging for the state bucket, e.g. { target\_bucket = "my-log-bucket", target\_prefix = "tf-state/" }. The target bucket must already exist and allow log delivery. Setting this overrides create\_log\_bucket and sends logs to the bucket named here instead. | `map(string)` | `{}` | no |
 | <a name="input_state_bucket_tags"></a> [state\_bucket\_tags](#input\_state\_bucket\_tags) | Tags to associate with the bucket storing the Terraform state files | `map(string)` | <pre>{<br/>  "Automation": "Terraform"<br/>}</pre> | no |
 
 ## Outputs
@@ -111,6 +114,7 @@ is genuinely disposable.
 | Name | Description |
 |------|-------------|
 | <a name="output_dynamodb_table"></a> [dynamodb\_table](#output\_dynamodb\_table) | The name of the dynamo db table |
+| <a name="output_log_bucket"></a> [log\_bucket](#output\_log\_bucket) | Name of the bucket receiving the state bucket's access logs, or null when access logging is off or points at an external bucket |
 | <a name="output_region"></a> [region](#output\_region) | AWS region the state bucket lives in, for the backend block |
 | <a name="output_state_bucket"></a> [state\_bucket](#output\_state\_bucket) | The state\_bucket name |
 | <a name="output_state_bucket_arn"></a> [state\_bucket\_arn](#output\_state\_bucket\_arn) | ARN of the bucket storing the Terraform state files |
