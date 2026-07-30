@@ -41,15 +41,20 @@ jobs:
 
       - name: Determine lambdas to package
         id: lambdas
+        env:
+          # Branch names may contain shell metacharacters, so this is read as
+          # data rather than pasted into the script body.
+          BASE_REF: ${{ github.base_ref }}
+          SCRIPT_CHANGED: ${{ steps.changes.outputs.packaging-script }}
         run: |
-          if [ "${{ steps.changes.outputs.packaging-script }}" == "true" ]; then
+          if [ "$SCRIPT_CHANGED" == "true" ]; then
             echo "Package all lambdas (packaging script changed)"
             echo "args=" >> "$GITHUB_OUTPUT"
           else
             CHANGED=""
             for dir in src/*/; do
               lambda_name=$(basename "$dir")
-              if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^src/${lambda_name}/"; then
+              if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -q "^src/${lambda_name}/"; then
                 CHANGED="$CHANGED $lambda_name"
               fi
             done
@@ -58,9 +63,15 @@ jobs:
 
       - name: Package Lambda functions
         if: steps.changes.outputs.src == 'true' || steps.changes.outputs.packaging-script == 'true'
+        env:
+          # Built from basename of directories under src/, which a PR controls.
+          LAMBDA_ARGS: ${{ steps.lambdas.outputs.args }}
         run: |
           chmod +x scripts/package-lambdas.sh
-          ./scripts/package-lambdas.sh ${{ steps.lambdas.outputs.args }}
+          # Deliberately unquoted: this is a space-separated list of lambda
+          # names and word splitting is the intent.
+          # shellcheck disable=SC2086
+          ./scripts/package-lambdas.sh ${LAMBDA_ARGS}
 
       # Packages are published as GitHub release assets (see lambda-release.yaml),
       # not committed to the repo. This step only verifies that the source packages
