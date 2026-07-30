@@ -4,7 +4,6 @@ name: auto-terraform-apply-03-aws-github-actions-oidc
 permissions:
   id-token: write      # for fetching the OIDC token
   contents: read       # for actions/checkout
-  pull-requests: write # For dflook comments on PR
 
 on:
   workflow_dispatch:

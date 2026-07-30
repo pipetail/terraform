@@ -4,7 +4,6 @@ name: auto-terraform-apply-06-minimal-aws-terraform-bootstrap
 permissions:
   id-token: write      # for fetching the OIDC token
   contents: read       # for actions/checkout
-  pull-requests: write # For dflook comments on PR
 
 on:
   workflow_dispatch:
