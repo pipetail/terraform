@@ -56,6 +56,28 @@ module "eks" {
   }
 }
 
+locals {
+  eks_admin_principals = coalesce(
+    var.eks_administrator_principals,
+    ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"],
+  )
+
+  // An account root principal in a trust policy restricts nothing on its own —
+  // it hands the whole decision to identity policies, so any role carrying
+  // sts:AssumeRole on a wildcard (PowerUserAccess does) can assume this one and
+  // reach cluster-admin. When the caller has not named principals explicitly,
+  // the eks-admin tag becomes the gate, which the eks-administrators group's
+  // assume policy then complements from the identity side.
+  eks_admin_trust_conditions = merge(
+    {
+      Bool = { "aws:MultiFactorAuthPresent" = "true" }
+    },
+    var.eks_administrator_principals == null ? {
+      StringEquals = { "aws:PrincipalTag/eks-admin" = "true" }
+    } : {},
+  )
+}
+
 // roles and groups for the EKS access
 resource "aws_iam_role" "eks_access_administrator" {
   name = "eks_administrator"
@@ -65,11 +87,10 @@ resource "aws_iam_role" "eks_access_administrator" {
       {
         Action = "sts:AssumeRole"
         Principal = {
-          AWS = [
-            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          ]
+          AWS = local.eks_admin_principals
         }
-        Effect = "Allow"
+        Effect    = "Allow"
+        Condition = local.eks_admin_trust_conditions
       }
     ]
   })
