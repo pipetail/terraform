@@ -26,26 +26,45 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_policy" "this" {
-  #checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints" // TODO: this could be improved
   #checkov:skip=CKV_AWS_355: autoscaling Describe* and ec2:DescribeLaunchTemplateVersions do not support resource-level permissions
   name = "${var.name_prefix}eks-cluster-autoscaling"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
+        Sid = "Discovery"
         Action = [
           "autoscaling:DescribeAutoScalingGroups",
           "autoscaling:DescribeAutoScalingInstances",
           "autoscaling:DescribeLaunchConfigurations",
           "autoscaling:DescribeTags",
-          "autoscaling:SetDesiredCapacity",
-          "autoscaling:TerminateInstanceInAutoScalingGroup",
           "ec2:DescribeLaunchTemplateVersions",
         ]
         Resource = [
           "*",
         ]
         Effect = "Allow"
+      },
+      {
+        // Scaling and termination are separated from the read-only actions so
+        // they can carry a condition. Left on "*" alongside them, this role
+        // could zero the capacity of, or terminate instances in, any ASG in the
+        // account — including other clusters and unrelated fleets — and the
+        // calls would look like ordinary autoscaling activity in CloudTrail.
+        Sid = "ScaleOwnedGroups"
+        Action = [
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:TerminateInstanceInAutoScalingGroup",
+        ]
+        Resource = [
+          "*",
+        ]
+        Effect = "Allow"
+        Condition = {
+          StringEquals = {
+            "autoscaling:ResourceTag/k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+          }
+        }
       }
     ]
   })
