@@ -12,8 +12,7 @@ resource "aws_cloudwatch_log_group" "command_execution" {
 // to be granted the IAM permission to perform those actions against other AWS services.
 // https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
 locals {
-  #checkov:skip=CKV_AWS_111:We should review this TODO
-  #checkov:skip=CKV_AWS_356:SSM and logs actions require wildcard resources
+  #checkov:skip=CKV_AWS_356:ssmmessages actions do not support resource-level permissions
   allow_command_exec_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -24,9 +23,19 @@ locals {
           "ssmmessages:CreateDataChannel",
           "ssmmessages:OpenControlChannel",
           "ssmmessages:OpenDataChannel",
-          "kms:Decrypt",
         ]
         Resource = ["*"]
+      },
+      {
+        // Split out from the ssmmessages actions, which genuinely cannot be
+        // resource-scoped. kms:Decrypt can: ECS Exec only ever needs the key
+        // named in the cluster's execute_command_configuration. On "*" a task
+        // that got compromised could decrypt against any CMK whose policy
+        // delegates to the account root, which is how the shared key covering
+        // Aurora, flow logs and EKS secrets is written.
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = [aws_kms_key.main.arn]
       },
       {
         Effect   = "Allow"
