@@ -12,6 +12,7 @@ on:
       - "master"
     paths:
       - "examples/05-aws-complete/**"
+      - "modules/**"
       - ".github/workflows/**"
 
 jobs:

@@ -12,6 +12,7 @@ on:
       - "master"
     paths:
       - "examples/06-minimal-aws-terraform-bootstrap/**"
+      - "modules/**"
       - ".github/workflows/**"
 
 jobs:
