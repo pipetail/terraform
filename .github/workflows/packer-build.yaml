@@ -31,7 +31,9 @@ on:
 
 permissions:
   id-token: write
-  contents: write
+  # read, not write: this workflow builds an AMI and reports the id via
+  # $GITHUB_ENV and the step summary. It commits, pushes and tags nothing.
+  contents: read
 
 jobs:
   build:
