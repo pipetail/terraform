@@ -51,7 +51,19 @@ variable "state_bucket_kms_key_id" {
 variable "state_bucket_logging" {
   type        = map(string)
   default     = {}
-  description = "S3 server access logging for the state bucket, e.g. { target_bucket = \"my-log-bucket\", target_prefix = \"tf-state/\" }. The target bucket must already exist and allow log delivery. Empty map leaves access logging off."
+  description = "S3 server access logging for the state bucket, e.g. { target_bucket = \"my-log-bucket\", target_prefix = \"tf-state/\" }. The target bucket must already exist and allow log delivery. Setting this overrides create_log_bucket and sends logs to the bucket named here instead."
+}
+
+variable "create_log_bucket" {
+  type        = bool
+  default     = true
+  description = "Create a companion bucket to receive the state bucket's S3 server access logs. Ignored when state_bucket_logging is set. Disable only if access to Terraform state is already recorded elsewhere, e.g. by a CloudTrail S3 data event selector."
+}
+
+variable "log_retention_days" {
+  type        = number
+  default     = 365
+  description = "Days to retain state bucket access logs before expiry. Only used when create_log_bucket is true."
 }
 
 variable "dynamodb_point_in_time_recovery" {
