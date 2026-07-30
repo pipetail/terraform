@@ -1,6 +1,11 @@
 ---
 name: packer-wireguard-04
 
+# Without this the workflow inherits the repository default, which grants far
+# more than either job uses. Each job narrows or widens from here explicitly.
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -24,20 +29,15 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate Packer
 
+    # No cloud credentials here on purpose. This job runs on pull_request, and
+    # `packer init` installs plugin binaries named in the PR's own template, so
+    # holding a role would let a PR run arbitrary code against the account.
     permissions:
-      id-token: write
       contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6
-        with:
-          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
-          role-session-name: GithubActionsPackerValidate
-          aws-region: eu-west-1
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789 # v3
@@ -46,12 +46,20 @@ jobs:
         working-directory: examples/04-aws-wireguard-vpn/packer
         run: packer init wireguard.pkr.hcl
 
+      # Without -evaluate-datasources: resolving the amazon-ami datasource needs
+      # AWS access. A broken filter now surfaces in the master build instead of
+      # at PR time.
       - name: Packer Validate
         working-directory: examples/04-aws-wireguard-vpn/packer
-        run: packer validate -evaluate-datasources -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
+        run: packer validate -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
 
   build:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # A called workflow cannot be granted more than its caller holds, so the
+    # OIDC token the build needs has to be granted here.
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/packer-build.yaml
     with:
       name: wireguard-04
