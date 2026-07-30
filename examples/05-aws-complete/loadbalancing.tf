@@ -66,10 +66,13 @@ module "elb_logs" {
   version = "5.13.0"
 
   bucket = "${var.name_prefix}-elb-logs"
-  acl    = "log-delivery-write"
 
+  // BucketOwnerEnforced disables object ACLs entirely. ALB log delivery has
+  // gone through the bucket policy (attach_elb_log_delivery_policy below)
+  // rather than the log-delivery-write ACL since 2022, so the canned ACL only
+  // kept an access path alive that IAM policy analysis cannot see.
   control_object_ownership = true
-  object_ownership         = "ObjectWriter"
+  object_ownership         = "BucketOwnerEnforced"
 
   # Allow deletion of non-empty bucket
   force_destroy = true
