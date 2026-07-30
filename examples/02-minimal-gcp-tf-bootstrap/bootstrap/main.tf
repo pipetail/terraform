@@ -7,14 +7,17 @@ provider "google" {
 
 resource "google_storage_bucket" "terraform_state" {
   #checkov:skip=CKV_GCP_62:For simplicity we dont want audit logging for this bucket
-  #checkov:skip=CKV_GCP_29:For simplicity we want to avoid using uniform bucket-level access here (this may be a bad idea though)
   project = "pipetail-terraform"
 
-  name          = "pipetail-terraform-state"
-  location      = "europe-west1"
-  force_destroy = true
+  name     = "pipetail-terraform-state"
+  location = "europe-west1"
 
-  public_access_prevention = "enforced"
+  // force_destroy would delete the bucket along with every object version it
+  // holds, so the versioning below would stop being a recovery path for state.
+  force_destroy = false
+
+  public_access_prevention    = "enforced"
+  uniform_bucket_level_access = true
 
   versioning {
     enabled = true
