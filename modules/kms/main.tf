@@ -56,4 +56,13 @@ resource "aws_kms_key" "main" {
   is_enabled              = true
 
   policy = local.kms_policy
+
+  // Replacing this key is unrecoverable: anything already encrypted under it —
+  // RDS storage, EBS volumes, EKS secrets, log groups — becomes permanently
+  // unreadable once the deletion window elapses. A stray -target, a module
+  // refactor without a moved block, or a provider upgrade that forces
+  // replacement would otherwise queue that destroy inside a large plan.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
