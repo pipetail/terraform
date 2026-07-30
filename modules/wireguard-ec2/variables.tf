@@ -16,8 +16,15 @@ variable "create_instance" {
 
 variable "ami_id" {
   type        = string
-  description = "AMI ID to be used with the EC2 instance"
-  default     = "ami-08ca3fed11864d6bb" // ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20211129
+  description = "AMI ID to be used with the EC2 instance. Build it with the Packer template under examples/04-aws-wireguard-vpn/packer; a stock image carries no WireGuard and the instance would come up as a bare host on a public IP."
+
+  // Deliberately no default. This instance sits in a public subnet with a
+  // public IP and 0.0.0.0/0 UDP ingress, so a default silently pins every
+  // caller who omits the argument to one ageing image forever.
+  validation {
+    condition     = can(regex("^ami-[0-9a-f]+$", var.ami_id))
+    error_message = "ami_id must be a valid AMI ID, e.g. ami-05dff77713a4fa273."
+  }
 }
 
 variable "ssh_key_name" {
