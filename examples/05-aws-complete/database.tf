@@ -1,8 +1,3 @@
-resource "random_password" "db_master_password" {
-  length  = 32
-  special = false
-}
-
 locals {
   # Aurora has no cluster-level auto-minor-version-upgrade toggle — it's a per-instance
   # DB attribute. Define it once here and apply it to every instance below.
@@ -31,10 +26,14 @@ module "db" {
     })
   }
 
-  manage_master_user_password = false
-  master_username             = "root"
-  master_password_wo          = random_password.db_master_password.result
-  master_password_wo_version  = 1
+  // RDS generates the password into a Secrets Manager secret it owns and
+  // rotates. master_password_wo keeps the value off the cluster resource, but
+  // generating it with a managed random_password put it back in state via that
+  // resource's own result attribute, so anyone able to read the state bucket
+  // held the database superuser credential.
+  manage_master_user_password   = true
+  master_user_secret_kms_key_id = aws_kms_key.main.key_id
+  master_username               = "root"
 
   storage_encrypted = true
   kms_key_id        = aws_kms_key.main.arn
