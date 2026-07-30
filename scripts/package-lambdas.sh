@@ -26,7 +26,11 @@ package_lambda() {
   # Install npm dependencies if package.json exists
   if [ -f "package.json" ]; then
     echo "  - Installing npm dependencies..."
-    npm ci --omit=dev --quiet
+    # --ignore-scripts: this runs on pull_request against the PR's own
+    # package.json, and lifecycle scripts would execute on the runner. A
+    # dependency that genuinely needs a build step has to get an explicit,
+    # reviewed one here instead.
+    npm ci --omit=dev --ignore-scripts --quiet
   fi
 
   # Normalize timestamps to make zip reproducible (same content = identical zip)
