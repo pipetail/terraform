@@ -36,12 +36,16 @@ module "sg_vpc_endpoints" {
   description = "Security group VPC endpoints"
   vpc_id      = module.vpc.vpc_id
 
+  // Interface endpoints terminate on an ENI bound to this group and only ever
+  // need 443 from inside the VPC. Only a Gateway endpoint is declared today,
+  // which ignores security groups entirely — so this is closed before the first
+  // interface endpoint (ECR, SSM, Secrets Manager) makes it reachable.
   ingress_with_cidr_blocks = [{
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow traffic to endpoint from VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = module.vpc.vpc_cidr_block
+    description = "HTTPS to interface endpoints from within the VPC"
   }]
 
   egress_with_cidr_blocks = [{
