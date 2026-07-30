@@ -63,5 +63,5 @@ variable "dynamodb_point_in_time_recovery" {
 variable "create_dynamodb_table" {
   type        = bool
   default     = false
-  description = "Create DynamoDB table for Terraform state locking. Not needed when using S3 native locking (use_lockfile = true in backend config, requires Terraform 1.6+)."
+  description = "Create DynamoDB table for Terraform state locking. Not needed when using S3 native locking (use_lockfile = true in backend config, requires Terraform 1.10+)."
 }
