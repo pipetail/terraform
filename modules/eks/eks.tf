@@ -216,6 +216,7 @@ resource "aws_security_group_rule" "eks_workers_to_eks_workers_all" {
 // EBS volume in the account — not just this cluster's. Scoped here to the
 // controller's service account instead.
 module "ebs_csi_irsa" {
+  #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.60.0"
 
