@@ -44,6 +44,12 @@ source "amazon-ebs" "wireguard" {
   ami_users     = []
   instance_type = "t3.micro"
 
+  // prepare-system.sh writes the WireGuard server private key into the image,
+  // so the resulting snapshot is secret-bearing. Canonical's source AMI is
+  // unencrypted and that carries over unless this is set, leaving the key
+  // readable to anyone who can copy or mount the snapshot.
+  encrypt_boot = true
+
   source_ami   = data.amazon-ami.ubuntu.id
   ssh_username = "ubuntu"
 
