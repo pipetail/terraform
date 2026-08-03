@@ -51,6 +51,17 @@
   ],
   "customManagers": [
     {
+      "description": "Pin action digests in workflow templates. Renovate's github-actions manager only scans .yml/.yaml, so these copy-paste templates would drift indefinitely and hand whoever copies them year-old action versions.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.ya?ml\\.example$/"
+      ],
+      "matchStrings": [
+        "uses:\\s+(?<depName>[\\w.-]+/[\\w.-]+)@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<currentValue>v\\S+)"
+      ],
+      "datasourceTemplate": "github-tags"
+    },
+    {
       "description": "Track EKS Kubernetes version in Terraform variables",
       "customType": "regex",
       "managerFilePatterns": [
