@@ -41,11 +41,10 @@ module "eks" {
       addon_version = data.aws_eks_addon_version.vpc_cni.version
       #service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
-    aws-ebs-csi-driver = {
-      addon_version               = data.aws_eks_addon_version.ebs_csi_driver.version
-      resolve_conflicts_on_create = "OVERWRITE"
-      resolve_conflicts_on_update = "OVERWRITE"
-    }
+    // aws-ebs-csi-driver is deliberately not here — see aws_eks_addon.ebs_csi
+    // below. It needs a service account role, and a role built from this
+    // module's own OIDC provider cannot be fed back into its addons input
+    // without forming a dependency cycle.
   }
 
   kms_key_enable_default_policy = true
@@ -70,8 +69,6 @@ module "eks" {
       iam_role_attach_cni_policy = true
       iam_role_additional_policies = {
         ssm = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-        // AmazonEBSCSIDriverPolicy is definitely not needed by all nodes, only by csi-driver, it's here just for simplicity (EKS module doesn't support it)
-        csi = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
       }
 
       ami_type                   = local.bottlerocket_ami_type
@@ -211,4 +208,43 @@ resource "aws_security_group_rule" "eks_workers_to_eks_workers_all" {
   source_security_group_id = module.eks.node_security_group_id
   from_port                = 0
   security_group_id        = module.eks.node_security_group_id
+}
+
+// AmazonEBSCSIDriverPolicy grants ec2:CreateSnapshot, ec2:AttachVolume and
+// ec2:DetachVolume with no condition on volume/* and instance/*, so on a node
+// role it lets anything that reaches node credentials snapshot or detach any
+// EBS volume in the account — not just this cluster's. Scoped here to the
+// controller's service account instead.
+module "ebs_csi_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "5.60.0"
+
+  role_name_prefix      = substr("${var.name}-ebs-csi-", 0, 32)
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name = module.eks.cluster_name
+  addon_name   = "aws-ebs-csi-driver"
+
+  addon_version            = data.aws_eks_addon_version.ebs_csi_driver.version
+  service_account_role_arn = module.ebs_csi_irsa.iam_role_arn
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+}
+
+// The addon moves out of the upstream module's addons map rather than being
+// replaced. Without this a consumer with a live cluster would see the driver
+// destroyed and recreated, which stops volume attach/detach while it is gone.
+moved {
+  from = module.eks.aws_eks_addon.this["aws-ebs-csi-driver"]
+  to   = aws_eks_addon.ebs_csi
 }
