@@ -15,7 +15,12 @@ module "vpc" {
 
   create_database_subnet_group = false
   enable_dns_hostnames         = true
-  map_public_ip_on_launch      = true
+
+  // map_public_ip_on_launch is deliberately left at the module default of
+  // false. The VPN host asks for its own public address via
+  // associate_public_ip_address in modules/wireguard-ec2, so turning it on at
+  // the subnet level only means anything else launched into these subnets
+  // silently gets a public IP too.
 
   manage_default_network_acl    = false
   manage_default_security_group = false
