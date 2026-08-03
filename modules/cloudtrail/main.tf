@@ -21,9 +21,14 @@ resource "aws_cloudtrail" "main" {
 
   kms_key_id = var.kms_key_arn
 
+  // kms.amazonaws.com is deliberately not excluded. The exclusion drops every
+  // KMS control-plane event, not just the noisy Decrypt/GenerateDataKey ones —
+  // including ScheduleKeyDeletion, DisableKey and PutKeyPolicy. Scheduling
+  // deletion of the key that protects RDS, EBS and EKS secrets would then leave
+  // no trail record for an alarm to fire on. Management events are free on the
+  // first trail; data events are the cost driver.
   event_selector {
     exclude_management_event_sources = [
-      "kms.amazonaws.com",
       "rdsdata.amazonaws.com"
     ]
   }
