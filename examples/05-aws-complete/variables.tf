@@ -62,3 +62,9 @@ variable "redis" {
     engine_version = "6.2"
   }
 }
+
+variable "eks_administrator_principals" {
+  type        = list(string)
+  default     = null
+  description = "IAM principal ARNs (users or roles) allowed to assume the EKS administrator role, which carries cluster-admin. Leave null to instead allow any principal in this account tagged eks-admin=true. Either way MFA is required."
+}
