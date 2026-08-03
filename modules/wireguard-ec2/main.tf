@@ -42,4 +42,13 @@ module "ec2_instance" {
   vpc_security_group_ids      = [module.sg.security_group_id]
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
+
+  // The AMI carries the WireGuard private key, so the running volume holds it
+  // too. Encryption here is independent of the AMI's own encryption — an
+  // unencrypted AMI would otherwise produce an unencrypted root volume.
+  root_block_device = [
+    {
+      encrypted = true
+    }
+  ]
 }
