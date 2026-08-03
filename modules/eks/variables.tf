@@ -84,3 +84,9 @@ variable "secrets_encryption_kms_key_arn" {
   type        = string
   description = "KMS Key ARN for k8s secrets encryption"
 }
+
+variable "endpoint_public_access_cidrs" {
+  type        = list(string)
+  default     = null
+  description = "CIDRs allowed to reach the public Kubernetes API endpoint. Leave null to inherit the upstream default of 0.0.0.0/0. Set this to the egress addresses that actually need API access — anything running Terraform or kubectl against the cluster must be covered, including CI."
+}

@@ -13,7 +13,14 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.24.1"
 
-  endpoint_public_access = true
+  // Leaving endpoint_public_access_cidrs unset falls through to the upstream
+  // default of 0.0.0.0/0, i.e. the Kubernetes API is reachable from anywhere
+  // and any leaked credential mapped to an access entry is usable with no
+  // network control in front of it. Narrowing it needs the applier to have a
+  // stable egress address first — GitHub-hosted runners do not.
+  endpoint_private_access      = true
+  endpoint_public_access       = true
+  endpoint_public_access_cidrs = var.endpoint_public_access_cidrs
 
   authentication_mode                      = "API"
   enable_cluster_creator_admin_permissions = true
