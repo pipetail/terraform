@@ -119,15 +119,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail" {
       days = 90
     }
 
+    // Prefix only. CloudTrail does not tag the objects it delivers, so adding a
+    // tag condition here makes the rule match nothing at all — the expiration
+    // and both transitions below silently never run.
     filter {
-      and {
-        prefix = "AWSLogs/"
-
-        tags = {
-          rule      = "log"
-          autoclean = "true"
-        }
-      }
+      prefix = "AWSLogs/"
     }
 
     transition {
