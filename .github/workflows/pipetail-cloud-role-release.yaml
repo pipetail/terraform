@@ -1,0 +1,82 @@
+---
+name: pipetail-cloud-role-release
+
+permissions:
+  contents: write
+
+# A version bump landing on master publishes the release; the tag is created by
+# `gh release create --target` below, so there is no separate tagging step and no
+# push-a-tag trigger. Module changes landing *without* a bump fail this workflow
+# on purpose: consumers pin `?ref=pipetail-cloud-role-v<version>`, so an unbumped
+# change never reaches them, and that failure is otherwise completely silent.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'modules/pipetail-cloud-role/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Module version to release (defaults to modules/pipetail-cloud-role/VERSION)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Publish module release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # need history to diff the version against the previous commit
+
+      - name: Resolve version and tag
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          MODULE=modules/pipetail-cloud-role
+          VERSION="$(tr -d '[:space:]' < "${MODULE}/VERSION")"
+          RELEASE=true
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            [ -z "${{ inputs.version }}" ] || VERSION="${{ inputs.version }}"
+          else
+            # A new branch or force-push can report an unreachable "before" SHA.
+            if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BEFORE="$(git rev-parse HEAD^ 2>/dev/null || echo "")"
+            fi
+
+            if [ -z "$BEFORE" ]; then
+              echo "::notice::No usable base commit to diff against; skipping release."
+              RELEASE=false
+            elif ! git diff --name-only "$BEFORE" HEAD -- "$MODULE" | grep -qE '\.tf$'; then
+              # Only terraform files change what a consumer resolves at that ref.
+              echo "::notice::No terraform files changed; skipping release."
+              RELEASE=false
+            else
+              PREVIOUS="$(git show "${BEFORE}:${MODULE}/VERSION" 2>/dev/null | tr -d '[:space:]' || echo "")"
+              if [ -n "$PREVIOUS" ] && [ "$VERSION" = "$PREVIOUS" ]; then
+                echo "::error::${MODULE} changed but ${MODULE}/VERSION is still ${VERSION}. Consumers pin an exact ref, so this change would never reach them. Bump the version."
+                exit 1
+              fi
+            fi
+          fi
+
+          {
+            echo "VERSION=${VERSION}"
+            echo "TAG=pipetail-cloud-role-v${VERSION}"
+            echo "RELEASE=${RELEASE}"
+          } >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        if: env.RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes "pipetail-cloud-role module ${VERSION}"
