@@ -76,14 +76,14 @@ is genuinely disposable.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.83, < 7.0.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.57.1 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 4.11.0 |
-| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 4.11.0 |
+| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
+| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
 
 ## Resources
 
