@@ -85,6 +85,18 @@ resource "aws_iam_role_policy" "scan_read" {
           "tag:GetResources",
         ]
         Resource = "*"
+      },
+      {
+        # Reads the forwarded-event timeline out of the alerting Lambda's log group.
+        # Scoped to that one log group rather than "*": FilterLogEvents on every group
+        # would expose whatever the account's other functions log, which is a different
+        # class of data from the metadata the statement above reads. A consumer that
+        # renamed the function must set alerting_log_group to match, or this statement
+        # matches nothing and the timeline stays empty.
+        Sid      = "PipetailAlertingLogRead"
+        Effect   = "Allow"
+        Action   = ["logs:FilterLogEvents"]
+        Resource = "arn:aws:logs:*:*:log-group:${var.alerting_log_group}:*"
       }
     ]
   })

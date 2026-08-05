@@ -19,6 +19,12 @@ variable "portal_aws_account_id" {
   }
 }
 
+variable "alerting_log_group" {
+  type        = string
+  description = "CloudWatch log group of the aws-events-to-slack Lambda, read for the forwarded-event timeline. Change it only if the function was deployed under a different name."
+  default     = "/aws/lambda/aws-events-to-slack"
+}
+
 variable "role_name" {
   type        = string
   description = "Name of the IAM role to create"
