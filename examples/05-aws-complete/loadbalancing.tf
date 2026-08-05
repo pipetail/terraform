@@ -1,38 +1,36 @@
 module "sg_alb" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "6.0.0"
 
   name        = "alb"
   description = "SG for Appplication balancer - HTTP allowed"
   vpc_id      = module.vpc.vpc_id
 
-  ingress_with_cidr_blocks = [
-    {
+  ingress_rules = {
+    http = {
       from_port   = 80
       to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
+      ip_protocol = "tcp"
+      cidr_ipv4   = "0.0.0.0/0"
       description = "HTTP for ALB"
-    },
-    {
+    }
+    https = {
       from_port   = 443
       to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
+      ip_protocol = "tcp"
+      cidr_ipv4   = "0.0.0.0/0"
       description = "HTTPS for ALB"
-    },
-  ]
+    }
+  }
 
-  egress_with_cidr_blocks = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = -1
-      cidr_blocks = "0.0.0.0/0"
+  egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
       description = "Allow outgoing traffic"
     }
-  ]
+  }
 }
 
 resource "aws_alb_target_group" "ingress" {
@@ -108,7 +106,7 @@ resource "aws_alb" "ingress" {
   internal           = false
   load_balancer_type = "application"
   subnets            = module.vpc.public_subnets
-  security_groups    = [module.sg_alb.security_group_id]
+  security_groups    = [module.sg_alb.id]
 
   access_logs {
     bucket  = module.elb_logs.s3_bucket_id

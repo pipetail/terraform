@@ -217,10 +217,11 @@ resource "aws_security_group_rule" "eks_workers_to_eks_workers_all" {
 // controller's service account instead.
 module "ebs_csi_irsa" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.60.0"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  version = "6.8.0"
 
-  role_name_prefix      = substr("${var.name}-ebs-csi-", 0, 32)
+  name                  = substr("${var.name}-ebs-csi-", 0, 32)
+  use_name_prefix       = true
   attach_ebs_csi_policy = true
 
   oidc_providers = {
@@ -236,7 +237,7 @@ resource "aws_eks_addon" "ebs_csi" {
   addon_name   = "aws-ebs-csi-driver"
 
   addon_version            = data.aws_eks_addon_version.ebs_csi_driver.version
-  service_account_role_arn = module.ebs_csi_irsa.iam_role_arn
+  service_account_role_arn = module.ebs_csi_irsa.arn
 
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"

@@ -16,7 +16,7 @@ resource "aws_elasticache_replication_group" "redis" {
 
   port               = 6379
   subnet_group_name  = module.vpc.elasticache_subnet_group_name
-  security_group_ids = [module.sg_redis.security_group_id]
+  security_group_ids = [module.sg_redis.id]
 
   parameter_group_name = aws_elasticache_parameter_group.redis.name
 }
@@ -34,31 +34,34 @@ resource "aws_elasticache_parameter_group" "redis" {
 module "sg_redis" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "6.0.0"
 
   name        = "sg_redis"
   description = "ElastiCache Redis"
   vpc_id      = module.vpc.vpc_id
 
-  ingress_with_source_security_group_id = [
-    # {
-    #   description              = "Redis TCP from ECS Fargate"
-    #   rule                     = "redis-tcp"
-    #   source_security_group_id = // your app sg id
-    # },
-  ]
+  ingress_rules = {
+    # app = {
+    #   description                  = "Redis TCP from ECS Fargate"
+    #   from_port                    = 6379
+    #   to_port                      = 6379
+    #   ip_protocol                  = "tcp"
+    #   referenced_security_group_id = // your app sg id
+    # }
 
-  ingress_with_self = [
-    {
-      rule = "all-all"
-    },
-  ]
+    // "self" is resolved by the module to this group's own id.
+    self_all = {
+      ip_protocol                  = "-1"
+      referenced_security_group_id = "self"
+      description                  = "All traffic within the group"
+    }
+  }
 
-  egress_with_cidr_blocks = [{
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow outgoing traffic"
-  }]
+  egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow outgoing traffic"
+    }
+  }
 }

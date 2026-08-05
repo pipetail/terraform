@@ -80,7 +80,7 @@ resource "aws_ecs_service" "loki" {
   enable_execute_command = true
 
   network_configuration {
-    security_groups = [module.sg_loki.security_group_id]
+    security_groups = [module.sg_loki.id]
     subnets         = module.vpc.private_subnets
   }
 
@@ -92,36 +92,36 @@ resource "aws_ecs_service" "loki" {
 module "sg_loki" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "6.0.0"
 
   name        = "loki"
   description = "Security group for grafana loki ECS"
   vpc_id      = module.vpc.vpc_id
 
-  ingress_with_source_security_group_id = [
-    # {
-    #   description              = "Loki access from grafana"
-    #   from_port                = 3100
-    #   to_port                  = 3100
-    #   protocol                 = "tcp"
-    #   source_security_group_id = module.sg_grafana.security_group_id
-    # },
-    # {
-    #   description              = "Loki log push"
-    #   from_port                = 3100
-    #   to_port                  = 3100
-    #   protocol                 = "tcp"
-    #   source_security_group_id = // add here your app sg id
-    # },
-  ]
+  ingress_rules = {
+    # grafana = {
+    #   description                  = "Loki access from grafana"
+    #   from_port                    = 3100
+    #   to_port                      = 3100
+    #   ip_protocol                  = "tcp"
+    #   referenced_security_group_id = module.sg_grafana.id
+    # }
+    # log_push = {
+    #   description                  = "Loki log push"
+    #   from_port                    = 3100
+    #   to_port                      = 3100
+    #   ip_protocol                  = "tcp"
+    #   referenced_security_group_id = // add here your app sg id
+    # }
+  }
 
-  egress_with_cidr_blocks = [{
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow outgoing traffic"
-  }]
+  egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow outgoing traffic"
+    }
+  }
 }
 
 resource "aws_iam_role" "loki_ecs_task_execution" {

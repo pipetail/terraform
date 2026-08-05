@@ -17,7 +17,7 @@ module "eks" {
 
   allow_ingress = {
     "https" = {
-      source_security_group_id = module.sg_alb.security_group_id
+      source_security_group_id = module.sg_alb.id
       port                     = local.ingress_ports["https"]
       protocol                 = "tcp"
     },

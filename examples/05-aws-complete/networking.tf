@@ -30,7 +30,7 @@ module "vpc" {
 module "sg_vpc_endpoints" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "6.0.0"
 
   name        = "vpc_endpoints"
   description = "Security group VPC endpoints"
@@ -40,21 +40,23 @@ module "sg_vpc_endpoints" {
   // need 443 from inside the VPC. Only a Gateway endpoint is declared today,
   // which ignores security groups entirely — so this is closed before the first
   // interface endpoint (ECR, SSM, Secrets Manager) makes it reachable.
-  ingress_with_cidr_blocks = [{
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = module.vpc.vpc_cidr_block
-    description = "HTTPS to interface endpoints from within the VPC"
-  }]
+  ingress_rules = {
+    https = {
+      from_port   = 443
+      to_port     = 443
+      ip_protocol = "tcp"
+      cidr_ipv4   = module.vpc.vpc_cidr_block
+      description = "HTTPS to interface endpoints from within the VPC"
+    }
+  }
 
-  egress_with_cidr_blocks = [{
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow outgoing traffic"
-  }]
+  egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow outgoing traffic"
+    }
+  }
 }
 
 # VPC Endpoints to AWS services
@@ -65,7 +67,7 @@ module "vpc_endpoints" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "6.6.1"
 
-  security_group_ids = [module.sg_vpc_endpoints.security_group_id]
+  security_group_ids = [module.sg_vpc_endpoints.id]
   vpc_id             = module.vpc.vpc_id
   endpoints = {
     s3 = {

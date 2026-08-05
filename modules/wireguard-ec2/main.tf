@@ -1,33 +1,37 @@
 module "sg" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "6.0.0"
 
   name        = "wireguard-vpn"
   description = "wireguard vpn"
   vpc_id      = var.vpc_id
 
-  ingress_with_cidr_blocks = [{
-    from_port   = var.port
-    to_port     = var.port
-    protocol    = "udp"
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow wireguard from internet"
-  }]
+  ingress_rules = {
+    wireguard = {
+      from_port   = var.port
+      to_port     = var.port
+      ip_protocol = "udp"
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow wireguard from internet"
+    }
+  }
 
-  egress_with_cidr_blocks = [{
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = "0.0.0.0/0"
-    description = "Allow all egress"
-  }]
+  // This host NATs VPN client traffic to arbitrary internet destinations, so
+  // open egress is the function of the module rather than an oversight.
+  egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow all egress"
+    }
+  }
 }
 
 module "ec2_instance" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   create = var.create_instance
 
@@ -39,16 +43,14 @@ module "ec2_instance" {
   key_name   = var.ssh_key_name
   monitoring = true
 
-  vpc_security_group_ids      = [module.sg.security_group_id]
+  vpc_security_group_ids      = [module.sg.id]
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
 
   // The AMI carries the WireGuard private key, so the running volume holds it
   // too. Encryption here is independent of the AMI's own encryption — an
   // unencrypted AMI would otherwise produce an unencrypted root volume.
-  root_block_device = [
-    {
-      encrypted = true
-    }
-  ]
+  root_block_device = {
+    encrypted = true
+  }
 }
