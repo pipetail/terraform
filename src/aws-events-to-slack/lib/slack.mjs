@@ -4,13 +4,19 @@ import { SLACK_WEBHOOK_URL, SLACK_BOT_TOKEN, SLACK_CHANNEL } from "./config.mjs"
 // Slack rejects the ENTIRE message with invalid_attachments if any single block
 // text exceeds this, so one long field drops the whole notification. AWS Health
 // descriptions and JSON dumps routinely run past it — truncate instead.
-const SLACK_TEXT_LIMIT = 3000;
+export const SLACK_TEXT_LIMIT = 3000;
+
+export function truncate(text, limit = SLACK_TEXT_LIMIT) {
+  if (text.length <= limit) return text;
+  if (limit <= 1) return "";
+  return `${text.slice(0, limit - 2)}…`;
+}
 
 function capText(node) {
-  if (typeof node?.text !== "string" || node.text.length <= SLACK_TEXT_LIMIT) {
-    return node;
-  }
-  return { ...node, text: `${node.text.slice(0, SLACK_TEXT_LIMIT - 2)}…` };
+  if (typeof node?.text !== "string") return node;
+
+  const text = truncate(node.text);
+  return text === node.text ? node : { ...node, text };
 }
 
 function capBlocks(blocks) {
