@@ -1,6 +1,41 @@
 import https from "https";
 import { SLACK_WEBHOOK_URL, SLACK_BOT_TOKEN, SLACK_CHANNEL } from "./config.mjs";
 
+// Slack rejects the ENTIRE message with invalid_attachments if any single block
+// text exceeds this, so one long field drops the whole notification. AWS Health
+// descriptions and JSON dumps routinely run past it — truncate instead.
+const SLACK_TEXT_LIMIT = 3000;
+
+function capText(node) {
+  if (typeof node?.text !== "string" || node.text.length <= SLACK_TEXT_LIMIT) {
+    return node;
+  }
+  return { ...node, text: `${node.text.slice(0, SLACK_TEXT_LIMIT - 2)}…` };
+}
+
+function capBlocks(blocks) {
+  return blocks.map((block) => ({
+    ...block,
+    ...(block.text ? { text: capText(block.text) } : {}),
+    ...(block.fields ? { fields: block.fields.map(capText) } : {}),
+    ...(block.elements ? { elements: block.elements.map(capText) } : {}),
+  }));
+}
+
+function capMessage(message) {
+  return {
+    ...message,
+    ...(message.blocks ? { blocks: capBlocks(message.blocks) } : {}),
+    ...(message.attachments
+      ? {
+          attachments: message.attachments.map((attachment) =>
+            attachment.blocks ? { ...attachment, blocks: capBlocks(attachment.blocks) } : attachment
+          ),
+        }
+      : {}),
+  };
+}
+
 function postViaBotToken(message) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ channel: SLACK_CHANNEL, ...message });
@@ -77,10 +112,12 @@ function postViaWebhook(message) {
 }
 
 export function postToSlack(message) {
+  const capped = capMessage(message);
+
   if (SLACK_BOT_TOKEN && SLACK_CHANNEL) {
-    return postViaBotToken(message);
+    return postViaBotToken(capped);
   }
-  return postViaWebhook(message);
+  return postViaWebhook(capped);
 }
 
 const COLOR_SEVERITY = { danger: "high", warning: "medium", good: "low" };
