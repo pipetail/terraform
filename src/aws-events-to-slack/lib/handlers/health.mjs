@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME } from "../config.mjs";
-import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor, truncate, SLACK_TEXT_LIMIT } from "../slack.mjs";
 
 // Events that are noise when they close successfully
 const SKIP_WHEN_CLOSED = new Set([
@@ -27,22 +27,30 @@ export async function handleHealthEvent(event) {
     .filter(Boolean)
     .slice(0, 10);
 
-  let text = `:hospital: *AWS Health Event*\n\n`;
-  text += `*Service:* ${service}\n`;
-  text += `*Event:* ${eventTypeCode}\n`;
-  text += `*Region:* ${region}\n`;
-  text += `*Status:* ${statusCode}\n`;
-  text += `*Started:* ${startTime}\n`;
-  text += `\n*Description:*\n${description}`;
+  let header = `:hospital: *AWS Health Event*\n\n`;
+  header += `*Service:* ${service}\n`;
+  header += `*Event:* ${eventTypeCode}\n`;
+  header += `*Region:* ${region}\n`;
+  header += `*Status:* ${statusCode}\n`;
+  header += `*Started:* ${startTime}\n`;
+  header += `\n*Description:*\n`;
+
+  let footer = "";
 
   if (affectedEntities.length > 0) {
-    text += `\n\n*Affected Resources:*\n`;
+    footer += `\n\n*Affected Resources:*\n`;
     for (const entity of affectedEntities) {
-      text += `- \`${entity}\`\n`;
+      footer += `- \`${entity}\`\n`;
     }
   }
 
-  text += `\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
+  footer += `\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
+
+  // AWS writes descriptions long enough to blow the block limit by themselves.
+  // Spend what's left of the budget on the description so the affected
+  // resources and account survive instead of being cut off the end.
+  const budget = SLACK_TEXT_LIMIT - header.length - footer.length;
+  const text = header + truncate(description, budget) + footer;
 
   const color = statusCode === "closed" ? "good" : "danger";
   const summary = `:hospital: AWS Health: ${service} - ${eventTypeCode}`;
