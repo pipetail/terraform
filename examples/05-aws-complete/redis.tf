@@ -1,10 +1,25 @@
+// ElastiCache has no AWS-managed equivalent of RDS's manage_master_user_password,
+// so the token is generated here and does land in Terraform state. Treat the
+// state bucket as holding this credential.
+resource "random_password" "redis_auth_token" {
+  length = 64
+  // ElastiCache rejects most punctuation in an AUTH token.
+  special          = true
+  override_special = "!&#$^<>-"
+}
+
 resource "aws_elasticache_replication_group" "redis" {
-  #checkov:skip=CKV_AWS_30:No encryption in transit yet TODO: do we need it?
-  #checkov:skip=CKV_AWS_31:No encryption in transit yet with auth token TODO: do we need it?
-  #checkov:skip=CKV_AWS_29:No encryption at rest yet TODO: add it!
-  #checkov:skip=CKV_AWS_191:No KMS yet TODO: should we add it?
   replication_group_id = var.redis.cluster_id
   description          = "redis cluster"
+
+  // All three are immutable on an existing replication group: turning them on
+  // replaces the cluster and drops the cache. Clients must speak TLS and send
+  // the AUTH token before this applies. On engine 7.x, transit_encryption_mode
+  // = "preferred" allows a staged rollout instead.
+  at_rest_encryption_enabled = true
+  kms_key_id                 = aws_kms_key.main.arn
+  transit_encryption_enabled = true
+  auth_token                 = random_password.redis_auth_token.result
 
   automatic_failover_enabled  = true
   preferred_cache_cluster_azs = ["${var.region}a", "${var.region}b"] #FIXME: Only 2 hardcoded regions
