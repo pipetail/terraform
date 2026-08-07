@@ -3,9 +3,21 @@ data "aws_caller_identity" "current" {}
 locals {
   name          = var.name
   create_global = var.create_account_global_resources
-  release_tag   = "aws-events-to-slack-v${var.lambda_version}"
-  zip_url       = "https://github.com/pipetail/terraform/releases/download/${local.release_tag}/aws-events-to-slack-${var.lambda_version}.zip"
-  zip_path      = "${path.module}/.artifacts/aws-events-to-slack-${var.lambda_version}.zip"
+
+  names = {
+    daily_check_rule      = coalesce(var.resource_names.daily_check_rule, "${var.name}-daily-check")
+    health_rule           = coalesce(var.resource_names.health_rule, "${var.name}-health")
+    budgets_topic         = coalesce(var.resource_names.budgets_topic, "${var.name}-budgets")
+    db_monitoring_topic   = coalesce(var.resource_names.db_monitoring_topic, "${var.name}-db-monitoring")
+    anomaly_monitor       = coalesce(var.resource_names.anomaly_monitor, "${var.name}-cost-anomaly")
+    anomaly_subscription  = coalesce(var.resource_names.anomaly_subscription, "${var.name}-cost-anomaly")
+    cloudtrail_api_rule   = coalesce(var.resource_names.cloudtrail_api_rule, "${var.name}-cloudtrail-api-calls")
+    cloudtrail_login_rule = coalesce(var.resource_names.cloudtrail_login_rule, "${var.name}-cloudtrail-console-login")
+  }
+
+  release_tag = "aws-events-to-slack-v${var.lambda_version}"
+  zip_url     = "https://github.com/pipetail/terraform/releases/download/${local.release_tag}/aws-events-to-slack-${var.lambda_version}.zip"
+  zip_path    = "${path.module}/.artifacts/aws-events-to-slack-${var.lambda_version}.zip"
   cloudtrail_event_names = [
     "DeleteTrail",
     "StopLogging",
@@ -164,7 +176,7 @@ resource "aws_lambda_function" "this" {
 
 resource "aws_cloudwatch_event_rule" "daily_check" {
   count               = local.create_global ? 1 : 0
-  name                = "${local.name}-daily-check"
+  name                = local.names.daily_check_rule
   description         = "Daily check for pending maintenance, EOL warnings, and resource hygiene"
   schedule_expression = var.daily_check_schedule
 }
@@ -185,7 +197,7 @@ resource "aws_lambda_permission" "eventbridge_daily_check" {
 }
 
 resource "aws_cloudwatch_event_rule" "health_events" {
-  name        = "${local.name}-health"
+  name        = local.names.health_rule
   description = "Capture AWS Health events"
 
   event_pattern = jsonencode(merge(
@@ -215,7 +227,7 @@ resource "aws_lambda_permission" "eventbridge_health" {
 resource "aws_sns_topic" "budgets" {
   #checkov:skip=CKV_AWS_26:SNS encryption not required for budget alerts
   count = local.create_global ? 1 : 0
-  name  = "${local.name}-budgets"
+  name  = local.names.budgets_topic
 }
 
 resource "aws_sns_topic_policy" "budgets" {
@@ -259,14 +271,14 @@ resource "aws_sns_topic_policy" "budgets" {
 
 resource "aws_ce_anomaly_monitor" "cost" {
   count             = local.create_global ? 1 : 0
-  name              = "${local.name}-cost-anomaly"
+  name              = local.names.anomaly_monitor
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
 }
 
 resource "aws_ce_anomaly_subscription" "cost" {
   count = local.create_global ? 1 : 0
-  name  = "${local.name}-cost-anomaly"
+  name  = local.names.anomaly_subscription
 
   monitor_arn_list = [aws_ce_anomaly_monitor.cost[0].arn]
 
@@ -334,7 +346,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 resource "aws_sns_topic" "db_monitoring" {
   #checkov:skip=CKV_AWS_26:KMS encryption not required for RDS event notifications
   count = var.rds_monitoring_enabled ? 1 : 0
-  name  = "${local.name}-db-monitoring"
+  name  = local.names.db_monitoring_topic
 }
 
 resource "aws_sns_topic_subscription" "db_monitoring_to_lambda" {
@@ -355,7 +367,7 @@ resource "aws_lambda_permission" "sns_db_monitoring" {
 
 resource "aws_cloudwatch_event_rule" "cloudtrail_api_calls" {
   count       = var.cloudtrail_enabled ? 1 : 0
-  name        = "${local.name}-cloudtrail-api-calls"
+  name        = local.names.cloudtrail_api_rule
   description = "Capture security-relevant CloudTrail API calls"
 
   event_pattern = jsonencode({
@@ -384,7 +396,7 @@ resource "aws_lambda_permission" "eventbridge_cloudtrail_api" {
 
 resource "aws_cloudwatch_event_rule" "cloudtrail_console_login" {
   count       = var.cloudtrail_enabled ? 1 : 0
-  name        = "${local.name}-cloudtrail-console-login"
+  name        = local.names.cloudtrail_login_rule
   description = "Capture AWS Console login events"
 
   event_pattern = jsonencode({

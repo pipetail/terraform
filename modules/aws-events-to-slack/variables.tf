@@ -9,6 +9,25 @@ variable "lambda_version" {
   type        = string
 }
 
+# name is ForceNew on all of these, and replacing an SNS topic silently drops
+# subscribers the module does not own (AWS Chatbot, hand-added endpoints) while
+# re-sending confirmation requests for the ones it does. Adopting this module over
+# an existing deployment therefore needs a way to keep the names already in place.
+variable "resource_names" {
+  description = "Override individual resource names to match an existing deployment. Each unset field falls back to the var.name-prefixed default."
+  type = object({
+    daily_check_rule      = optional(string)
+    health_rule           = optional(string)
+    budgets_topic         = optional(string)
+    db_monitoring_topic   = optional(string)
+    anomaly_monitor       = optional(string)
+    anomaly_subscription  = optional(string)
+    cloudtrail_api_rule   = optional(string)
+    cloudtrail_login_rule = optional(string)
+  })
+  default = {}
+}
+
 variable "account_name" {
   description = "AWS account name for Slack notifications"
   type        = string
