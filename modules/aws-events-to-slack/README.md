@@ -63,9 +63,9 @@ this module. When a bot token and `slack_channel` are present the function posts
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0.0, < 7.0.0 |
-| <a name="provider_http"></a> [http](#provider\_http) | >= 3.0, < 4.0.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | >= 3.0, < 4.0.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.58.0 |
+| <a name="provider_http"></a> [http](#provider\_http) | 3.6.0 |
+| <a name="provider_null"></a> [null](#provider\_null) | 3.3.0 |
 
 ## Modules
 
@@ -127,7 +127,8 @@ No modules.
 | <a name="input_regions"></a> [regions](#input\_regions) | Comma-separated AWS regions for multi-region checks | `string` | n/a | yes |
 | <a name="input_resource_names"></a> [resource\_names](#input\_resource\_names) | Override individual resource names to match an existing deployment. Each unset field falls back to the var.name-prefixed default. | <pre>object({<br/>    daily_check_rule      = optional(string)<br/>    health_rule           = optional(string)<br/>    budgets_topic         = optional(string)<br/>    db_monitoring_topic   = optional(string)<br/>    anomaly_monitor       = optional(string)<br/>    anomaly_subscription  = optional(string)<br/>    cloudtrail_api_rule   = optional(string)<br/>    cloudtrail_login_rule = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_slack_channel"></a> [slack\_channel](#input\_slack\_channel) | Slack channel ID to post notifications to | `string` | n/a | yes |
-| <a name="input_slack_webhook_secret_arn"></a> [slack\_webhook\_secret\_arn](#input\_slack\_webhook\_secret\_arn) | ARN of an externally-managed Secrets Manager secret holding WEBHOOK\_URL and optionally SLACK\_BOT\_TOKEN keys | `string` | n/a | yes |
+| <a name="input_slack_webhook_secret_arn"></a> [slack\_webhook\_secret\_arn](#input\_slack\_webhook\_secret\_arn) | ARN of an externally-managed Secrets Manager secret holding the webhook URL and optionally a SLACK\_BOT\_TOKEN key | `string` | n/a | yes |
+| <a name="input_slack_webhook_secret_key"></a> [slack\_webhook\_secret\_key](#input\_slack\_webhook\_secret\_key) | Key inside the Secrets Manager secret holding the webhook URL. Override when the secret rotated the URL under a different key. | `string` | `"WEBHOOK_URL"` | no |
 | <a name="input_thresholds_url"></a> [thresholds\_url](#input\_thresholds\_url) | Optional URL shown in budget alerts pointing to where alert thresholds are configured. When empty, the link is omitted. | `string` | `""` | no |
 | <a name="input_timeout"></a> [timeout](#input\_timeout) | Lambda function timeout in seconds | `number` | `300` | no |
 

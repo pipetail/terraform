@@ -146,7 +146,7 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = {
-      SLACK_WEBHOOK_URL         = jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)["WEBHOOK_URL"]
+      SLACK_WEBHOOK_URL         = jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)[var.slack_webhook_secret_key]
       SLACK_BOT_TOKEN           = try(jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)["SLACK_BOT_TOKEN"], "")
       SLACK_CHANNEL             = var.slack_channel
       AWS_ACCOUNT_NAME          = var.account_name

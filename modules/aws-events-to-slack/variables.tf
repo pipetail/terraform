@@ -44,8 +44,14 @@ variable "slack_channel" {
 }
 
 variable "slack_webhook_secret_arn" {
-  description = "ARN of an externally-managed Secrets Manager secret holding WEBHOOK_URL and optionally SLACK_BOT_TOKEN keys"
+  description = "ARN of an externally-managed Secrets Manager secret holding the webhook URL and optionally a SLACK_BOT_TOKEN key"
   type        = string
+}
+
+variable "slack_webhook_secret_key" {
+  description = "Key inside the Secrets Manager secret holding the webhook URL. Override when the secret rotated the URL under a different key."
+  type        = string
+  default     = "WEBHOOK_URL"
 }
 
 variable "thresholds_url" {
