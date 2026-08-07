@@ -63,9 +63,9 @@ this module. When a bot token and `slack_channel` are present the function posts
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.58.0 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.6.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.3.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0.0, < 7.0.0 |
+| <a name="provider_http"></a> [http](#provider\_http) | >= 3.0, < 4.0.0 |
+| <a name="provider_null"></a> [null](#provider\_null) | >= 3.0, < 4.0.0 |
 
 ## Modules
 
