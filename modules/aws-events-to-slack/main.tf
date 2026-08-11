@@ -202,9 +202,11 @@ resource "aws_cloudwatch_event_rule" "health_events" {
 
   event_pattern = jsonencode(merge(
     {
-      source        = ["aws.health"]
-      "detail-type" = ["AWS Health Event"]
+      source = ["aws.health"]
     },
+    length(var.health_detail_types) > 0 ? {
+      "detail-type" = var.health_detail_types
+    } : {},
     length(var.health_event_categories) > 0 ? {
       detail = { eventTypeCategory = var.health_event_categories }
     } : {}
