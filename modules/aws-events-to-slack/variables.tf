@@ -66,6 +66,12 @@ variable "health_event_categories" {
   default     = []
 }
 
+variable "health_detail_types" {
+  description = "EventBridge detail-type values to match on AWS Health events. The default matches the standard health feed. Set to [] to drop the detail-type condition entirely and forward every AWS Health detail-type (e.g. \"AWS Health Abuse Event\"), which also matches rules created before this filter existed."
+  type        = list(string)
+  default     = ["AWS Health Event"]
+}
+
 variable "create_account_global_resources" {
   description = "Create account-global resources (daily scheduled check, budget/cost-anomaly SNS, Cost Explorer anomaly monitor). Set false on secondary-region instances that should only capture regional EventBridge events."
   type        = bool
