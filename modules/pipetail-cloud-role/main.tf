@@ -50,6 +50,9 @@ resource "aws_iam_role_policy" "scan_read" {
           "acm:ListCertificates",
           "backup:ListBackupPlans",
           "budgets:DescribeBudgets",
+          # DescribeBudgets is authorized against budgets:ViewBudget, not the
+          # like-named action — granting only DescribeBudgets denies the call.
+          "budgets:ViewBudget",
           "ce:GetAnomalyMonitors",
           "ce:GetCostForecast",
           "ce:GetReservationCoverage",
