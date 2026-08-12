@@ -71,6 +71,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "ec2:DescribeNatGateways",
           "ec2:DescribeNetworkAcls",
           "ec2:DescribeReservedInstances",
+          "ec2:DescribeRouteTables",
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeSnapshotAttribute",
           "ec2:DescribeSnapshots",
