@@ -66,6 +66,15 @@ resource "aws_iam_role_policy" "scan_read" {
           "cloudtrail:LookupEvents",
           "cloudwatch:DescribeAlarms",
           "cloudwatch:GetMetricData",
+          # Compute Optimizer answers only for accounts that opted in (free, one-time);
+          # an unenrolled account returns status Inactive rather than an error.
+          "compute-optimizer:GetAutoScalingGroupRecommendations",
+          "compute-optimizer:GetEBSVolumeRecommendations",
+          "compute-optimizer:GetEC2InstanceRecommendations",
+          "compute-optimizer:GetEnrollmentStatus",
+          "compute-optimizer:GetIdleRecommendations",
+          "compute-optimizer:GetLambdaFunctionRecommendations",
+          "compute-optimizer:GetRDSDatabaseRecommendations",
           "config:DescribeConfigurationRecorderStatus",
           "ec2:DescribeAddresses",
           "ec2:DescribeFlowLogs",
