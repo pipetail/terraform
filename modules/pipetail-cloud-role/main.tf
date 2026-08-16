@@ -116,6 +116,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "lambda:ListTags",
           "logs:DescribeLogGroups",
           "organizations:DescribeOrganization",
+          "rds:DescribeDBClusters",
           "rds:DescribeDBInstances",
           "rds:DescribeDBMajorEngineVersions",
           "rds:DescribeReservedDBInstances",
