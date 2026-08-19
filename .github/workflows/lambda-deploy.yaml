@@ -38,9 +38,59 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy ${{ inputs.lambda_name }} to ${{ inputs.environment }}
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_REGION: ${{ inputs.aws_region }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      LAMBDA_NAME: ${{ inputs.lambda_name }}
+      S3_BUCKET: ${{ inputs.s3_bucket }}
+      UPDATE_FUNCTION: ${{ inputs.update_function }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$LAMBDA_NAME" =~ ^[A-Za-z0-9_-]{1,64}$ ]]; then
+            echo "::error::Lambda name must contain 1-64 letters, numbers, hyphens, or underscores"
+            exit 1
+          fi
+
+          case "$DEPLOY_ENVIRONMENT" in
+            stage | prod) ;;
+            *)
+              echo "::error::Environment must be stage or prod"
+              exit 1
+              ;;
+          esac
+
+          function_name="${DEPLOY_ENVIRONMENT}-${LAMBDA_NAME}"
+          if (( ${#function_name} > 64 )); then
+            echo "::error::Deployed Lambda function name must not exceed 64 characters"
+            exit 1
+          fi
+
+          if (( ${#S3_BUCKET} < 3 || ${#S3_BUCKET} > 63 )) ||
+            [[ ! "$S3_BUCKET" =~ ^[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]] ||
+            [[ "$S3_BUCKET" == *..* ]] ||
+            [[ "$S3_BUCKET" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] ||
+            [[ "$S3_BUCKET" == xn--* || "$S3_BUCKET" == sthree-* || "$S3_BUCKET" == amzn_s3_demo_* ]] ||
+            [[ "$S3_BUCKET" == *-s3alias || "$S3_BUCKET" == *--ol-s3 || "$S3_BUCKET" == *.mrap || "$S3_BUCKET" == *--x-s3 || "$S3_BUCKET" == *--table-s3 ]]; then
+            echo "::error::S3 bucket name is invalid"
+            exit 1
+          fi
+
+          if (( ${#AWS_REGION} > 32 )) || [[ ! "$AWS_REGION" =~ ^[a-z]{2}(-[a-z0-9]+)+-[0-9]+$ ]]; then
+            echo "::error::AWS region identifier is invalid"
+            exit 1
+          fi
+
+          if [[ ! -d "src/$LAMBDA_NAME" ]]; then
+            echo "::error::Lambda directory src/$LAMBDA_NAME does not exist"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -52,29 +102,29 @@ jobs:
         with:
           role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
           role-session-name: GithubActionsLambdaDeploy
-          aws-region: ${{ inputs.aws_region }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Package Lambda
         run: |
           chmod +x scripts/package-lambdas.sh
-          ./scripts/package-lambdas.sh "${{ inputs.lambda_name }}"
+          ./scripts/package-lambdas.sh "$LAMBDA_NAME"
 
       - name: Upload to S3
         run: |
-          aws s3 cp "src/${{ inputs.lambda_name }}.zip" \
-            "s3://${{ inputs.s3_bucket }}/${{ inputs.environment }}/${{ inputs.lambda_name }}.zip"
-          echo "Uploaded to s3://${{ inputs.s3_bucket }}/${{ inputs.environment }}/${{ inputs.lambda_name }}.zip"
+          S3_URI="s3://${S3_BUCKET}/${DEPLOY_ENVIRONMENT}/${LAMBDA_NAME}.zip"
+          aws s3 cp "src/${LAMBDA_NAME}.zip" "$S3_URI"
+          echo "Uploaded to $S3_URI"
 
       - name: Update Lambda function code
         if: inputs.update_function
         run: |
-          FUNCTION_NAME="${{ inputs.environment }}-${{ inputs.lambda_name }}"
-          if aws lambda get-function --function-name "$FUNCTION_NAME" --region "${{ inputs.aws_region }}" > /dev/null 2>&1; then
+          FUNCTION_NAME="${DEPLOY_ENVIRONMENT}-${LAMBDA_NAME}"
+          if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$AWS_REGION" > /dev/null 2>&1; then
             aws lambda update-function-code \
               --function-name "$FUNCTION_NAME" \
-              --s3-bucket "${{ inputs.s3_bucket }}" \
-              --s3-key "${{ inputs.environment }}/${{ inputs.lambda_name }}.zip" \
-              --region "${{ inputs.aws_region }}" \
+              --s3-bucket "$S3_BUCKET" \
+              --s3-key "${DEPLOY_ENVIRONMENT}/${LAMBDA_NAME}.zip" \
+              --region "$AWS_REGION" \
               --publish
             echo "Updated Lambda function: $FUNCTION_NAME"
           else
@@ -87,8 +137,8 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Parameter | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-----------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Lambda | \`${{ inputs.lambda_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Environment | \`${{ inputs.environment }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| S3 Bucket | \`${{ inputs.s3_bucket }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Region | \`${{ inputs.aws_region }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Function Updated | \`${{ inputs.update_function }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lambda | \`$LAMBDA_NAME\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | \`$DEPLOY_ENVIRONMENT\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| S3 Bucket | \`$S3_BUCKET\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Region | \`$AWS_REGION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Function Updated | \`$UPDATE_FUNCTION\` |" >> "$GITHUB_STEP_SUMMARY"
