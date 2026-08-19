@@ -36,7 +36,7 @@ resource "aws_iam_role_policy" "scan_read" {
   # Every action the scan services call, and nothing else — the broad AWS-managed
   # SecurityAudit policy is deliberately not attached. All of these are account-wide
   # Describe/List/Get calls with no resource-level scoping available, hence Resource "*".
-  # ce:Get* recommendation calls are the only billable ones (Cost Explorer API, priced
+  # ce:Get* calls are the only billable ones (Cost Explorer API, priced
   # per request): https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/
   policy = jsonencode({
     Version = "2012-10-17"
@@ -53,6 +53,7 @@ resource "aws_iam_role_policy" "scan_read" {
           # DescribeBudgets is authorized against budgets:ViewBudget, not the
           # like-named action — granting only DescribeBudgets denies the call.
           "budgets:ViewBudget",
+          "ce:GetAnomalies",
           "ce:GetAnomalyMonitors",
           "ce:GetCostForecast",
           "ce:GetReservationCoverage",
@@ -93,6 +94,9 @@ resource "aws_iam_role_policy" "scan_read" {
           "eks:DescribeCluster",
           "eks:DescribeClusterVersions",
           "eks:ListClusters",
+          "elasticache:DescribeCacheClusters",
+          "elasticache:DescribeReplicationGroups",
+          "elasticache:DescribeUpdateActions",
           "elasticfilesystem:DescribeFileSystems",
           "elasticloadbalancing:DescribeLoadBalancers",
           "elasticloadbalancing:DescribeTargetGroups",
@@ -119,6 +123,8 @@ resource "aws_iam_role_policy" "scan_read" {
           "rds:DescribeDBClusters",
           "rds:DescribeDBInstances",
           "rds:DescribeDBMajorEngineVersions",
+          "rds:DescribeEvents",
+          "rds:DescribePendingMaintenanceActions",
           "rds:DescribeReservedDBInstances",
           "route53:ListHostedZones",
           "route53:ListResourceRecordSets",
