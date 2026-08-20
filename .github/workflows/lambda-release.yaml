@@ -15,12 +15,6 @@ on:
       - master
     paths:
       - 'src/aws-events-to-slack/**'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Lambda version to release (defaults to src/aws-events-to-slack/package.json)'
-        required: false
-        type: string
 
 jobs:
   release:
@@ -41,28 +35,24 @@ jobs:
           VERSION="$(jq -r .version "$PKG")"
           RELEASE=true
 
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            [ -z "${{ inputs.version }}" ] || VERSION="${{ inputs.version }}"
-          else
-            # A new branch or force-push can report an unreachable "before" SHA.
-            if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-              BEFORE="$(git rev-parse HEAD^ 2>/dev/null || echo "")"
-            fi
+          # A new branch or force-push can report an unreachable "before" SHA.
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            BEFORE="$(git rev-parse HEAD^ 2>/dev/null || echo "")"
+          fi
 
-            if [ -z "$BEFORE" ]; then
-              echo "::notice::No usable base commit to diff against; skipping release."
-              RELEASE=false
-            elif ! git diff --name-only "$BEFORE" HEAD -- src/aws-events-to-slack \
-                 | grep -qE '\.(mjs|js|json)$'; then
-              # Only files that end up inside the published zip warrant a release.
-              echo "::notice::No packaged Lambda files changed; skipping release."
-              RELEASE=false
-            else
-              PREVIOUS="$(git show "${BEFORE}:${PKG}" 2>/dev/null | jq -r '.version // empty' || echo "")"
-              if [ -n "$PREVIOUS" ] && [ "$VERSION" = "$PREVIOUS" ]; then
-                echo "::error::src/aws-events-to-slack changed but ${PKG} is still ${VERSION}. Consumers pin an exact version, so this change would never reach them. Bump the version."
-                exit 1
-              fi
+          if [ -z "$BEFORE" ]; then
+            echo "::notice::No usable base commit to diff against; skipping release."
+            RELEASE=false
+          elif ! git diff --name-only "$BEFORE" HEAD -- src/aws-events-to-slack \
+               | grep -qE '\.(mjs|js|json)$'; then
+            # Only files that end up inside the published zip warrant a release.
+            echo "::notice::No packaged Lambda files changed; skipping release."
+            RELEASE=false
+          else
+            PREVIOUS="$(git show "${BEFORE}:${PKG}" 2>/dev/null | jq -r '.version // empty' || echo "")"
+            if [ -n "$PREVIOUS" ] && [ "$VERSION" = "$PREVIOUS" ]; then
+              echo "::error::src/aws-events-to-slack changed but ${PKG} is still ${VERSION}. Consumers pin an exact version, so this change would never reach them. Bump the version."
+              exit 1
             fi
           fi
 
