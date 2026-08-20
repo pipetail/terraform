@@ -48,6 +48,10 @@ resource "aws_iam_role_policy" "scan_read" {
           "access-analyzer:ListAnalyzers",
           "acm:DescribeCertificate",
           "acm:ListCertificates",
+          # GetAutoScalingGroupRecommendations reads the groups on the caller's
+          # behalf and fails with AccessDenied when this is missing, even though
+          # the compute-optimizer action itself is granted.
+          "autoscaling:DescribeAutoScalingGroups",
           "backup:ListBackupPlans",
           "budgets:DescribeBudgets",
           # DescribeBudgets is authorized against budgets:ViewBudget, not the
@@ -117,6 +121,9 @@ resource "aws_iam_role_policy" "scan_read" {
           "kms:GetKeyRotationStatus",
           "kms:ListKeys",
           "lambda:ListFunctions",
+          # Same transitive enforcement for GetLambdaFunctionRecommendations as
+          # the autoscaling read above.
+          "lambda:ListProvisionedConcurrencyConfigs",
           "lambda:ListTags",
           "logs:DescribeLogGroups",
           "organizations:DescribeOrganization",
