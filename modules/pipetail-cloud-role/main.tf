@@ -142,6 +142,26 @@ resource "aws_iam_role_policy" "scan_read" {
         Resource = "*"
       },
       {
+        # The only write this role holds: a one-time Compute Optimizer enrollment.
+        # The service produces no recommendations until an account opts in.
+        Sid      = "PipetailComputeOptimizerOptIn"
+        Effect   = "Allow"
+        Action   = ["compute-optimizer:UpdateEnrollmentStatus"]
+        Resource = "*"
+      },
+      {
+        # First-time enrollment creates AWSServiceRoleForComputeOptimizer, so without
+        # this the opt-in call fails on exactly the accounts that never opted in.
+        # The condition pins the grant to that one service-linked role.
+        Sid      = "PipetailComputeOptimizerSlr"
+        Effect   = "Allow"
+        Action   = ["iam:CreateServiceLinkedRole"]
+        Resource = "*"
+        Condition = {
+          StringEquals = { "iam:AWSServiceName" = "compute-optimizer.amazonaws.com" }
+        }
+      },
+      {
         # Reads the forwarded-event timeline out of the alerting Lambda's log group.
         # Scoped to that one log group rather than "*": FilterLogEvents on every group
         # would expose whatever the account's other functions log, which is a different
