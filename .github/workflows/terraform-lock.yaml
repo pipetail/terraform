@@ -2,7 +2,7 @@
 name: terraform-lock
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 on:
@@ -18,7 +18,7 @@ on:
 jobs:
   terraform-lock:
     runs-on: ubuntu-latest
-    name: Update Terraform lock files
+    name: Verify Terraform lock files
     if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
@@ -26,7 +26,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
@@ -47,16 +46,10 @@ jobs:
             cd - > /dev/null
           done
 
-      - name: Check for changes
-        id: git-check
+      - name: Verify lock files
         run: |
-          git diff --quiet -- '**/.terraform.lock.hcl' || echo "has_changes=true" >> "$GITHUB_OUTPUT"
-
-      - name: Commit and push changes
-        if: steps.git-check.outputs.has_changes == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add '**/.terraform.lock.hcl'
-          git commit -m "chore: update terraform lock files for all platforms"
-          git push
+          if ! git diff --quiet -- '**/.terraform.lock.hcl'; then
+            git diff -- '**/.terraform.lock.hcl'
+            echo "::error::Terraform lock files are stale. Regenerate them for all five required platforms and commit the changes."
+            exit 1
+          fi
