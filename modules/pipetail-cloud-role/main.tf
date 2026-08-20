@@ -1,7 +1,7 @@
 resource "aws_iam_role" "pipetail_cloud" {
   #checkov:skip=CKV_AWS_61:Account-root principal is the documented cross-account pattern; the external ID condition below is what constrains it
   name        = var.role_name
-  description = "Role pipetail.cloud assumes to inspect this account; read-only except one-time Compute Optimizer enrollment"
+  description = "Read-only role pipetail.cloud assumes to inspect this account"
 
   # The external ID is what stops a confused deputy: the portal assumes this role from a
   # single shared AWS account, so without the condition any other tenant of that account
@@ -33,7 +33,7 @@ resource "aws_iam_role_policy" "scan_read" {
   name = "PipetailScanRead"
   role = aws_iam_role.pipetail_cloud.id
 
-  # Every action the scan services call, plus the one enrollment write below — the broad AWS-managed
+  # Every action the scan services call, and nothing else — the broad AWS-managed
   # SecurityAudit policy is deliberately not attached. All of these are account-wide
   # Describe/List/Get calls with no resource-level scoping available, hence Resource "*".
   # ce:Get* calls are the only billable ones (Cost Explorer API, priced
@@ -48,9 +48,9 @@ resource "aws_iam_role_policy" "scan_read" {
           "access-analyzer:ListAnalyzers",
           "acm:DescribeCertificate",
           "acm:ListCertificates",
-          # GetAutoScalingGroupRecommendations reads the groups on the caller's
-          # behalf and fails with AccessDenied when this is missing, even though
-          # the compute-optimizer action itself is granted.
+          # Compute Optimizer's GetAutoScalingGroupRecommendations reads the groups
+          # on the caller's behalf and fails with AccessDenied when this is missing,
+          # even though the compute-optimizer action itself is granted.
           "autoscaling:DescribeAutoScalingGroups",
           "backup:ListBackupPlans",
           "budgets:DescribeBudgets",
@@ -147,26 +147,6 @@ resource "aws_iam_role_policy" "scan_read" {
           "tag:GetResources",
         ]
         Resource = "*"
-      },
-      {
-        # The only write this role holds: a one-time Compute Optimizer enrollment.
-        # The service produces no recommendations until an account opts in.
-        Sid      = "PipetailComputeOptimizerOptIn"
-        Effect   = "Allow"
-        Action   = ["compute-optimizer:UpdateEnrollmentStatus"]
-        Resource = "*"
-      },
-      {
-        # First-time enrollment creates AWSServiceRoleForComputeOptimizer, so without
-        # this the opt-in call fails on exactly the accounts that never opted in.
-        # The condition pins the grant to that one service-linked role.
-        Sid      = "PipetailComputeOptimizerSlr"
-        Effect   = "Allow"
-        Action   = ["iam:CreateServiceLinkedRole"]
-        Resource = "*"
-        Condition = {
-          StringEquals = { "iam:AWSServiceName" = "compute-optimizer.amazonaws.com" }
-        }
       },
       {
         # Reads the forwarded-event timeline out of the alerting Lambda's log group.
