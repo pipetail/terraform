@@ -1,7 +1,7 @@
 resource "aws_iam_role" "pipetail_cloud" {
   #checkov:skip=CKV_AWS_61:Account-root principal is the documented cross-account pattern; the external ID condition below is what constrains it
   name        = var.role_name
-  description = "Read-only role pipetail.cloud assumes to inspect this account"
+  description = "Role pipetail.cloud assumes to inspect this account; read-only except one-time Compute Optimizer enrollment"
 
   # The external ID is what stops a confused deputy: the portal assumes this role from a
   # single shared AWS account, so without the condition any other tenant of that account
@@ -33,7 +33,7 @@ resource "aws_iam_role_policy" "scan_read" {
   name = "PipetailScanRead"
   role = aws_iam_role.pipetail_cloud.id
 
-  # Every action the scan services call, and nothing else — the broad AWS-managed
+  # Every action the scan services call, plus the one enrollment write below — the broad AWS-managed
   # SecurityAudit policy is deliberately not attached. All of these are account-wide
   # Describe/List/Get calls with no resource-level scoping available, hence Resource "*".
   # ce:Get* calls are the only billable ones (Cost Explorer API, priced
