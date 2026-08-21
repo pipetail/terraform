@@ -1,47 +1,105 @@
 locals {
   kms_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "Allow everything in this AWS account to use this KMS key"
-        Effect = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::${var.account_id}:root"
+    Statement = concat(
+      [
+        {
+          Sid    = "Allow key administration"
+          Effect = "Allow"
+          Principal = {
+            AWS = sort(tolist(var.key_administrator_arns))
+          }
+          Action = [
+            "kms:Describe*",
+            "kms:Enable*",
+            "kms:List*",
+            "kms:Put*",
+            "kms:Update*",
+            "kms:Revoke*",
+            "kms:Disable*",
+            "kms:Get*",
+            "kms:Delete*",
+            "kms:TagResource",
+            "kms:UntagResource",
+            "kms:ScheduleKeyDeletion",
+            "kms:CancelKeyDeletion",
+            "kms:RotateKeyOnDemand",
+          ]
+          Resource = "*"
+        },
+      ],
+      slice(
+        [
+          {
+            Sid    = "Allow key use"
+            Effect = "Allow"
+            Principal = {
+              AWS = sort(tolist(var.key_user_arns))
+            }
+            Action = [
+              "kms:Encrypt",
+              "kms:Decrypt",
+              "kms:ReEncrypt*",
+              "kms:GenerateDataKey*",
+              "kms:DescribeKey",
+            ]
+            Resource = "*"
+          },
+          {
+            Sid    = "Allow grants for AWS resources"
+            Effect = "Allow"
+            Principal = {
+              AWS = sort(tolist(var.key_user_arns))
+            }
+            Action = [
+              "kms:CreateGrant",
+              "kms:ListGrants",
+              "kms:RevokeGrant",
+            ]
+            Resource = "*"
+            Condition = {
+              Bool = {
+                "kms:GrantIsForAWSResource" = "true"
+              }
+            }
+          },
+        ],
+        0,
+        length(var.key_user_arns) > 0 ? 2 : 0,
+      ),
+      [
+        {
+          Sid    = "Allow cloudwatch log group encryption"
+          Effect = "Allow"
+          Principal = {
+            Service = "logs.${var.region}.amazonaws.com"
+          }
+          Action = [
+            "kms:Encrypt*",
+            "kms:Decrypt*",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:Describe*"
+          ]
+          Resource = "*"
+        },
+        {
+          Sid    = "Allow cloudtrail encryption"
+          Effect = "Allow"
+          Principal = {
+            Service = "cloudtrail.amazonaws.com"
+          }
+          Action = [
+            "kms:Encrypt*",
+            "kms:Decrypt*",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:Describe*"
+          ]
+          Resource = "*"
         }
-        Action   = "kms:*"
-        Resource = "*"
-      },
-      {
-        Sid    = "Allow cloudwatch log group encryption"
-        Effect = "Allow"
-        Principal = {
-          Service = "logs.${var.region}.amazonaws.com"
-        }
-        Action = [
-          "kms:Encrypt*",
-          "kms:Decrypt*",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:Describe*"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "Allow cloudtrail encryption"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudtrail.amazonaws.com"
-        }
-        Action = [
-          "kms:Encrypt*",
-          "kms:Decrypt*",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:Describe*"
-        ]
-        Resource = "*"
-      }
-    ]
+      ]
+    )
   })
 }
 
