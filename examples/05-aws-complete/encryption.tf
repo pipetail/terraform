@@ -1,3 +1,5 @@
+data "aws_partition" "current" {}
+
 resource "aws_kms_key" "main" {
   #checkov:skip=CKV_AWS_109: The asterisk ("*") identifies the KMS key to which the key policy is attached. https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
   #checkov:skip=CKV_AWS_111: The asterisk ("*") identifies the KMS key to which the key policy is attached. https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
@@ -87,13 +89,21 @@ resource "aws_kms_key" "main" {
           Service = "logs.${var.region}.amazonaws.com"
         }
         Action = [
-          "kms:Encrypt*",
-          "kms:Decrypt*",
+          "kms:Encrypt",
+          "kms:Decrypt",
           "kms:ReEncrypt*",
           "kms:GenerateDataKey*",
           "kms:Describe*",
         ]
         Resource = ["*"]
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = sort([
+              "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc-flow-logs/*",
+              "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:ecs-command-execution",
+            ])
+          }
+        }
       },
     ]
   })

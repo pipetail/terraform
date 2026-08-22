@@ -67,38 +67,69 @@ locals {
         0,
         length(var.key_user_arns) > 0 ? 2 : 0,
       ),
+      slice(
+        [
+          {
+            Sid    = "Allow cloudwatch log group encryption"
+            Effect = "Allow"
+            Principal = {
+              Service = "logs.${var.region}.amazonaws.com"
+            }
+            Action = [
+              "kms:Encrypt",
+              "kms:Decrypt",
+              "kms:ReEncrypt*",
+              "kms:GenerateDataKey*",
+              "kms:Describe*"
+            ]
+            Resource = "*"
+            Condition = {
+              ArnLike = {
+                "kms:EncryptionContext:aws:logs:arn" = sort(tolist(var.cloudwatch_log_group_arn_patterns))
+              }
+            }
+          },
+        ],
+        0,
+        length(var.cloudwatch_log_group_arn_patterns) > 0 ? 1 : 0,
+      ),
       [
-        {
-          Sid    = "Allow cloudwatch log group encryption"
-          Effect = "Allow"
-          Principal = {
-            Service = "logs.${var.region}.amazonaws.com"
-          }
-          Action = [
-            "kms:Encrypt*",
-            "kms:Decrypt*",
-            "kms:ReEncrypt*",
-            "kms:GenerateDataKey*",
-            "kms:Describe*"
-          ]
-          Resource = "*"
-        },
-        {
-          Sid    = "Allow cloudtrail encryption"
+        for index, trail_arn in sort(tolist(var.cloudtrail_trail_arns)) : {
+          Sid    = "Allow cloudtrail data key generation ${index + 1}"
           Effect = "Allow"
           Principal = {
             Service = "cloudtrail.amazonaws.com"
           }
-          Action = [
-            "kms:Encrypt*",
-            "kms:Decrypt*",
-            "kms:ReEncrypt*",
-            "kms:GenerateDataKey*",
-            "kms:Describe*"
-          ]
+          Action   = "kms:GenerateDataKey*"
           Resource = "*"
+          Condition = {
+            StringEquals = {
+              "aws:SourceArn"                            = trail_arn
+              "kms:EncryptionContext:aws:cloudtrail:arn" = trail_arn
+            }
+          }
         }
-      ]
+      ],
+      slice(
+        [
+          {
+            Sid    = "Allow cloudtrail key description"
+            Effect = "Allow"
+            Principal = {
+              Service = "cloudtrail.amazonaws.com"
+            }
+            Action   = "kms:DescribeKey"
+            Resource = "*"
+            Condition = {
+              StringEquals = {
+                "aws:SourceArn" = sort(tolist(var.cloudtrail_trail_arns))
+              }
+            }
+          },
+        ],
+        0,
+        length(var.cloudtrail_trail_arns) > 0 ? 1 : 0,
+      )
     )
   })
 }
