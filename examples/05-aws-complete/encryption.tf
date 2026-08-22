@@ -12,12 +12,72 @@ resource "aws_kms_key" "main" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "Allow everything in this AWS account to use this KMS key"
+        Sid    = "Allow key administration"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+          AWS = sort([
+            data.aws_iam_role.github_actions.arn,
+            aws_iam_role.eks_access_administrator.arn,
+          ])
         }
-        Action   = ["kms:*"]
+        Action = [
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion",
+          "kms:RotateKeyOnDemand",
+        ]
+        Resource = ["*"]
+      },
+      {
+        Sid    = "Allow key use"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = ["*"]
+      },
+      {
+        Sid    = "Allow grants for AWS resources"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_iam_role.github_actions.arn
+        }
+        Action = [
+          "kms:CreateGrant",
+          "kms:ListGrants",
+          "kms:RevokeGrant",
+        ]
+        Resource = ["*"]
+        Condition = {
+          Bool = {
+            "kms:GrantIsForAWSResource" = "true"
+          }
+        }
+      },
+      {
+        Sid    = "Allow Loki to decrypt ECS Exec data"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.loki_ecs_task.arn
+        }
+        Action   = ["kms:Decrypt"]
         Resource = ["*"]
       },
       {
