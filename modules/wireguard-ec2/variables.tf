@@ -37,3 +37,23 @@ variable "port" {
   type        = number
   description = "wireguard UDP port"
 }
+
+variable "iam_instance_profile" {
+  type        = string
+  description = "IAM instance profile that lets the WireGuard host retrieve its runtime configuration"
+
+  validation {
+    condition     = length(trimspace(var.iam_instance_profile)) > 0
+    error_message = "iam_instance_profile must not be empty."
+  }
+}
+
+variable "user_data" {
+  type        = string
+  description = "Non-secret boot configuration for the WireGuard host"
+
+  validation {
+    condition     = length(trimspace(var.user_data)) > 0
+    error_message = "user_data must not be empty."
+  }
+}

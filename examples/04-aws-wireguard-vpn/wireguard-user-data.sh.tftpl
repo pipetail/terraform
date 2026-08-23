@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+trap 'rm -f /etc/wireguard/.runtime.json.tmp' EXIT
+umask 077
+install -d -m 0700 /etc/wireguard
+cat > /etc/wireguard/.runtime.json.tmp << 'JSON'
+${runtime_config}
+JSON
+chmod 0600 /etc/wireguard/.runtime.json.tmp
+mv -f /etc/wireguard/.runtime.json.tmp /etc/wireguard/runtime.json
+trap - EXIT

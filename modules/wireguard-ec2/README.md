@@ -66,9 +66,11 @@ No resources.
 |------|-------------|------|---------|:--------:|
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID to be used with the EC2 instance. Build it with the Packer template under examples/04-aws-wireguard-vpn/packer; a stock image carries no WireGuard and the instance would come up as a bare host on a public IP. | `string` | n/a | yes |
 | <a name="input_create_instance"></a> [create\_instance](#input\_create\_instance) | Whether or not to create an EC2 instance to run the wireguard | `bool` | `true` | no |
+| <a name="input_iam_instance_profile"></a> [iam\_instance\_profile](#input\_iam\_instance\_profile) | IAM instance profile that lets the WireGuard host retrieve its runtime configuration | `string` | n/a | yes |
 | <a name="input_port"></a> [port](#input\_port) | wireguard UDP port | `number` | n/a | yes |
 | <a name="input_ssh_key_name"></a> [ssh\_key\_name](#input\_ssh\_key\_name) | SSH key name to be used with the EC2 instance | `string` | `""` | no |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | VPC Subnet ID to be used with the AWS resources, mainly EC2 instance | `string` | n/a | yes |
+| <a name="input_user_data"></a> [user\_data](#input\_user\_data) | Non-secret boot configuration for the WireGuard host | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC where to create all the resources | `string` | n/a | yes |
 
 ## Outputs

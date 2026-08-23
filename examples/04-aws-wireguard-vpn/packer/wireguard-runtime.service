@@ -1,0 +1,18 @@
+[Unit]
+Description=Load the WireGuard private key from AWS Secrets Manager
+Wants=network-online.target cloud-final.service
+After=network-online.target cloud-final.service
+ConditionPathExists=/etc/wireguard/runtime.json
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/sbin/configure-wireguard
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=30
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

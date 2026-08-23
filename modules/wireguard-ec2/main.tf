@@ -43,13 +43,16 @@ module "ec2_instance" {
   key_name   = var.ssh_key_name
   monitoring = true
 
+  iam_instance_profile        = var.iam_instance_profile
+  user_data                   = var.user_data
+  user_data_replace_on_change = true
+
   vpc_security_group_ids      = [module.sg.id]
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
 
-  // The AMI carries the WireGuard private key, so the running volume holds it
-  // too. Encryption here is independent of the AMI's own encryption — an
-  // unencrypted AMI would otherwise produce an unencrypted root volume.
+  // The boot service writes the WireGuard private key to this volume after it
+  // retrieves the secret, so the running volume must remain encrypted.
   root_block_device = {
     encrypted = true
   }

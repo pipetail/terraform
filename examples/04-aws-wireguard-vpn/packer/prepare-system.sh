@@ -10,14 +10,13 @@ echo "Waiting for cloud-init to finish"
 # Install required packages
 apt update
 apt -y upgrade
-apt -y install jq wireguard
+apt -y install awscli jq wireguard
 
-mkdir -p /etc/wireguard/keys
-cd /etc/wireguard/keys
-umask 077
-echo "${PRIVATE_KEY}" | tee privatekey | wg pubkey > publickey
-
-_PRIVATE_KEY_PLACEHOLDER="${PRIVATE_KEY}" envsubst < /tmp/wg0.conf.tpl > /etc/wireguard/wg0.conf
+install -d -m 0700 /etc/wireguard
+install -d -m 0755 /usr/local/share/wireguard
+install -m 0644 /tmp/wg0.conf.tftpl /usr/local/share/wireguard/wg0.conf.tftpl
+install -m 0755 /tmp/configure-wireguard.sh /usr/local/sbin/configure-wireguard
+install -m 0644 /tmp/wireguard-runtime.service /etc/systemd/system/wireguard-runtime.service
 
 # uncomment some lines
 sed -i '/#net.ipv4.ip_forward=1/s/^#//g' /etc/sysctl.conf
@@ -25,5 +24,6 @@ sed -i '/#net.ipv6.conf.all.forwarding=1/s/^#//g' /etc/sysctl.conf
 
 sysctl -p
 
-wg-quick up wg0
-systemctl enable wg-quick@wg0
+systemctl daemon-reload
+systemctl disable wg-quick@wg0.service
+systemctl enable wireguard-runtime.service
