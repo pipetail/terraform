@@ -5,7 +5,41 @@ locals {
   endpoint = local.use_dns ? "wg.${local.dns_zone_suffix}" : module.wireguard_vpn.public_ip
 
   wireguard_port       = 41194
-  wireguard_public_key = nonsensitive(jsondecode(data.aws_secretsmanager_secret_version.wireguard.secret_string)["public_key"])
+  wireguard_public_key = var.wireguard_public_key
+}
+
+resource "aws_iam_role" "wireguard" {
+  name = "${var.name_prefix}-wireguard"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowEC2ToAssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "wireguard_secret" {
+  name = "${var.name_prefix}-wireguard-secret"
+  role = aws_iam_role.wireguard.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ReadWireGuardSecret"
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = [data.aws_secretsmanager_secret.wireguard.arn]
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "wireguard" {
+  name = "${var.name_prefix}-wireguard"
+  role = aws_iam_role.wireguard.name
 }
 
 # self-hosted wireguard VPN on EC2
@@ -19,7 +53,15 @@ module "wireguard_vpn" {
 
   //ssh_key_name = "mysshkey" // TODO: you might wanna need to SSH/SSM into your EC2 instance for debugging in case of issues
 
-  ami_id = var.wireguard_ami // packer
+  ami_id               = var.wireguard_ami // packer
+  iam_instance_profile = aws_iam_instance_profile.wireguard.name
+  user_data = templatefile("${path.module}/wireguard-user-data.sh.tftpl", {
+    runtime_config = jsonencode({
+      public_key = var.wireguard_public_key
+      region     = var.region
+      secret_arn = data.aws_secretsmanager_secret.wireguard.arn
+    })
+  })
 }
 
 # resource "aws_route53_record" "wireguard" {
@@ -33,8 +75,4 @@ module "wireguard_vpn" {
 
 data "aws_secretsmanager_secret" "wireguard" {
   name = "wireguard"
-}
-
-data "aws_secretsmanager_secret_version" "wireguard" {
-  secret_id = data.aws_secretsmanager_secret.wireguard.id
 }

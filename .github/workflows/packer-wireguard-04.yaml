@@ -46,15 +46,9 @@ jobs:
         working-directory: examples/04-aws-wireguard-vpn/packer
         run: packer init wireguard.pkr.hcl
 
-      # -syntax-only because this job holds no AWS credentials. A plain
-      # `packer validate` still prepares the provisioner blocks, and the shell
-      # provisioner interpolates the amazon-secretsmanager datasource into
-      # environment_vars — unevaluated that is <unknown>, which is not a
-      # key=value pair, so validation fails on valid templates. Builder and
-      # provisioner config is therefore only checked by the master build.
       - name: Packer Validate
         working-directory: examples/04-aws-wireguard-vpn/packer
-        run: packer validate -syntax-only -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
+        run: packer validate -var-file=wireguard-prod.pkvars.hcl wireguard.pkr.hcl
 
   build:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

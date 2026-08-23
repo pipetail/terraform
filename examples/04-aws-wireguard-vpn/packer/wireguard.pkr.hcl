@@ -33,21 +33,12 @@ data "amazon-ami" "ubuntu" {
   most_recent = true
 }
 
-data "amazon-secretsmanager" "wireguard_keys" {
-  name = "wireguard"
-  key  = "private_key"
-}
-
 source "amazon-ebs" "wireguard" {
   ami_name      = "wireguard-${var.ami_version}"
   ami_regions   = [var.aws_region]
   ami_users     = []
   instance_type = "t3.micro"
 
-  // prepare-system.sh writes the WireGuard server private key into the image,
-  // so the resulting snapshot is secret-bearing. Canonical's source AMI is
-  // unencrypted and that carries over unless this is set, leaving the key
-  // readable to anyone who can copy or mount the snapshot.
   encrypt_boot = true
 
   source_ami   = data.amazon-ami.ubuntu.id
@@ -65,13 +56,20 @@ build {
 
   provisioner "file" {
     source      = "${var.config_file_path}"
-    destination = "/tmp/wg0.conf.tpl"
+    destination = "/tmp/wg0.conf.tftpl"
+  }
+
+  provisioner "file" {
+    source      = "./configure-wireguard.sh"
+    destination = "/tmp/configure-wireguard.sh"
+  }
+
+  provisioner "file" {
+    source      = "./wireguard-runtime.service"
+    destination = "/tmp/wireguard-runtime.service"
   }
 
   provisioner "shell" {
-    environment_vars = [
-      "PRIVATE_KEY=${data.amazon-secretsmanager.wireguard_keys.value}",
-    ]
     execute_command = "sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
     script          = "./prepare-system.sh"
   }

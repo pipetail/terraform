@@ -3,7 +3,7 @@ This is a simple WireGuard server setup on AWS EC2. A very small EC2 instance ru
 
 The key is simplicity. Terraform provisions all necessary infrastructure, Packer builds ubuntu-based AMI.
 
-WireGuard config is not being "hot-reloaded" on runtime. Every change to wg config means building a new AMI.
+WireGuard peer configuration is not hot-reloaded. Every peer change requires a new AMI, but the server private key is fetched from Secrets Manager when the instance boots.
 
 ## generate keys
 first generate WireGuard key-pair (for a better guide refer to the [official docs](https://www.wireguard.com/quickstart/))
@@ -13,13 +13,12 @@ wg genkey > privatekey
 wg pubkey < privatekey > publickey
 ```
 
-save the keys to Secrets Manager:
+Save the keys to Secrets Manager:
 ```
-aws secretsmanager create-secret --name wireguard \
-  --description "WireGuard keys" \
-  --secret-string '{"public_key":"'$(<publickey)'","private_key":"'$(<privatekey)'"}' \
-  --region eu-west-1
+aws secretsmanager create-secret --name wireguard --description "WireGuard keys" --secret-string '{"public_key":"'"$(<publickey)"'","private_key":"'"$(<privatekey)"'"}' --region eu-west-1
 ```
+
+Copy the public key into `terraform.tfvars` as `wireguard_public_key`. Terraform uses this nonsensitive value for the client configuration and to verify the private key fetched at boot. Terraform never reads the secret value.
 
 ## terraform apply - first part
 run terraform apply to create VPC resources
@@ -53,7 +52,7 @@ Open your WireGuard client, create a new empty tunnel config
 
 Enter `Name`
 
-Copy the `Public key` into `./packer/wg0-prod.conf.tpl` and save the file.
+Copy the client tunnel's `Public key` into `./packer/wg0-prod.conf.tftpl` and save the file.
 
 Keep the WireGuard window open, on the side in the terminal run:
 
@@ -149,12 +148,13 @@ Open up WireGuard client, choose your config and click `Activate`.
 
 The status should turn green and everything should work as expected now.
 
-## Wait where's the server private key?
-WireGuard server's private key IS baked in the ami. When doing `packer build` we fetch the private key from AWS Secrets Manager and bake it to the ami in the WireGuard config file.
+## Server private key
 
-A better approach might be having an entrypoint script that does this at runtime, so that the private key is not baked in the ami. In that case we'd need to be careful for the EC2 instance to have connectivity to Secrets Manager and the necessary permissions to fetch the secret (if not, this might cause downtime for our VPN).
+The AMI contains WireGuard, AWS CLI, the non-secret peer configuration template, and a boot service. It contains no server private key or rendered `wg0.conf`.
 
-The private key is kept the same forever with no rotation / revoking mechanism for the sake of simplicity and user experience (at the cost of security ofc).
+At boot, the service waits for networking and cloud-init, then retrieves the `wireguard` secret using the EC2 instance role. The role can read only that secret. The service validates the key, derives its public key, compares it with `wireguard_public_key`, writes the key and `wg0.conf` with mode `0600`, and starts WireGuard. If retrieval or validation fails, WireGuard remains stopped and systemd retries the service.
+
+The existing key still needs a separate rotation procedure. Retire older secret-bearing AMIs and historical state snapshots after deploying and testing the runtime-fetch image.
 
 ## Adding up your teammates
 If you want to add more users to use your VPN, you'll need to create a new AMI (and there's going to be a short downtime).
@@ -170,9 +170,7 @@ PersistentKeepalive = 25
 
 the `AllowedIPs` has to be unique for every VPN user, here we simply use the next available IP address in our VPN subnet `10.1.0.3/32` for this peer.
 
-then go to `packer` folder, edit wireguard-prod.pkvars.hcl - bump `ami_version` 1 -> 2
-
-run packer build just like before
+Run the Packer build again after editing the template. The CI workflow owns `ami_version`; do not edit it by hand.
 
 take the new AMI, paste it in terraform and run apply
 
@@ -184,8 +182,6 @@ if something goes wrong, you can always use the previous AMI id to "rollback".
 Terraform and Packer are not connected here. We are just taking outputs of one and feeding it to the other and then again the other way around.
 That is annoying. That could definitely be improved.
 
-Fetching the private key on runtime instead of baking it in the AMI might be a better approach
-
 Hotreloading the config (from S3 perhaps) instead of creating new AMIs could be nice, but optional (I prefer the simple approach here, baked in configs in build artefacts, no dependencies on config servers and possibility of rollbacks, i.e. hotreloading sounds great until somebody messes up the config on s3 and VPN stops working for everybody or when S3 / networking has outtage).
 
-Terraform is run in automation here, Packer is not.
+Terraform and Packer both run in automation.
