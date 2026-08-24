@@ -1,22 +1,11 @@
-variable "ingest_key" {
-  type        = string
-  description = "AWS Health ingest key generated in pipetail.cloud under Settings, shown once when you generate it. Terraform keeps it in state and hands it to EventBridge, which stores it in a Secrets Manager secret it manages for the connection; a key rotated in the portal reaches EventBridge only on the next apply."
-  sensitive   = true
-
-  validation {
-    condition     = length(var.ingest_key) > 0
-    error_message = "ingest_key must be the key generated in pipetail.cloud Settings; an empty value is accepted by EventBridge and every delivery then fails to authenticate."
-  }
-}
-
 variable "api_endpoint" {
   type        = string
-  description = "pipetail.cloud endpoint the events are posted to. The default is the portal's ingest URL — override it only if pipetail.cloud gives you a different one."
+  description = "pipetail.cloud endpoint the events are posted to. The default is the portal's ingest URL; override it only if pipetail.cloud gives you a different one."
   default     = "https://api.pipetail.cloud/ingest/aws-health"
 
   validation {
     condition     = can(regex("^https://", var.api_endpoint))
-    error_message = "api_endpoint must be an https:// URL — EventBridge API destinations invoke HTTPS endpoints only."
+    error_message = "api_endpoint must be an https:// URL. EventBridge API destinations invoke HTTPS endpoints only."
   }
 }
 
