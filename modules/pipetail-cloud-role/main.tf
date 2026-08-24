@@ -116,6 +116,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "iam:ListEntitiesForPolicy",
           "iam:ListPolicies",
           "iam:ListServerCertificates",
+          "iam:ListUserTags",
           "iam:ListUsers",
           "kms:DescribeKey",
           "kms:GetKeyRotationStatus",
