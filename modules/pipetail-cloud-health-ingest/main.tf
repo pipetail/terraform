@@ -34,13 +34,10 @@ locals {
   # pipetail.cloud does not read.
   ingest_key_header = "X-Pipetail-Ingest-Key"
 
-  # EventBridge requires an API key when the connection is created; this stands in until
-  # set_key_command replaces it.
+  # EventBridge requires an API key when the connection is created.
   ingest_key_placeholder = "REPLACE_ME"
 }
 
-# Renders the --region of the set_key_command output, so each instance prints a command that is
-# correct for the Region it was applied to.
 data "aws_region" "current" {}
 
 resource "aws_cloudwatch_event_connection" "this" {
