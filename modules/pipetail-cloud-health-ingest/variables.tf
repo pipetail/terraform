@@ -28,7 +28,7 @@ variable "create_dlq" {
 
 variable "invocation_rate_limit_per_second" {
   type        = number
-  description = "Ceiling on how many events per second EventBridge sends to the endpoint. AWS Health is low-volume, so the default leaves ample headroom while bounding what a broadened rule could aim at the endpoint. Events above the ceiling back up behind it and expire once they pass the target's maximum event age."
+  description = "Ceiling on how many events per second EventBridge sends to the endpoint. AWS Health is low-volume, so the default leaves ample headroom. Events above the ceiling back up behind it and expire once they pass the target's maximum event age."
   default     = 10
 
   validation {

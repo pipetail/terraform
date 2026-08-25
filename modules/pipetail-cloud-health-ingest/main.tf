@@ -1,31 +1,19 @@
-# Forwards this account's AWS Health events to pipetail.cloud, replacing the EventBridge setup
-# the portal otherwise documents clicking through the console.
+# Forwards this account's AWS Health events to pipetail.cloud.
 #
-# The ingest key is deliberately not an input to this module. A connection's API key has no
-# write-only argument, so a key handed to Terraform is stored in plaintext in state and in any
-# saved plan. Instead the connection is created holding a placeholder and the key is written
-# directly to EventBridge afterwards:
+# The ingest key is deliberately not an input: any value Terraform passes to a connection is
+# stored in plaintext in state and in saved plans. The connection is created with a placeholder
+# and the real key is written directly to EventBridge with the set_key_command output. Terraform
+# therefore cannot detect an unset, wrong, or rotated key; failed deliveries arriving in the
+# dead-letter queue are the detection path.
 #
-#   1. terraform apply
-#   2. run the set_key_command output once per instance, pasting the AWS Health ingest key
-#      generated in pipetail.cloud under Settings
-#   3. rotating the key later is that same command with the new value, no apply involved
+# One instance covers exactly one Region: connections, API destinations and rules are Regional,
+# and a rule can only target a destination in its own Region. Instantiate the module once per
+# Region with that Region's provider.
 #
-# EventBridge keeps the key in a Secrets Manager secret it manages for the connection, so it never
-# reaches Terraform state. The trade-off is real: ignore_changes on the connection means Terraform
-# cannot tell you that a key is unset, wrong, or rotated away, because not touching it is the
-# point. A connection still holding the placeholder authenticates nothing and every delivery
-# fails, so failed deliveries arriving in the dead-letter queue are the detection path.
-#
-# One instance covers exactly one Region: EventBridge connections, API destinations and rules are
-# all Regional, and a rule can only target a destination in its own Region. Pass a provider per
-# Region and instantiate the module once per Region.
-#
-# Which Regions to cover: a Region-specific event is delivered in the Region it affects, and an
-# event that is not Region-specific (IAM among them) only in us-east-1, so a us-east-1 instance is
-# needed on top of the Regions holding resources, or those events never arrive. The same page
-# describes backup delivery: an instance in us-west-2 also receives a copy of every other Region's
-# events, marked detail.backupEvent, and us-east-1 backs up us-west-2.
+# A Region-specific Health event is delivered in the Region it affects; events that are not
+# Region-specific (IAM among them) are delivered only in us-east-1, so a us-east-1 instance is
+# needed on top of the Regions holding resources. us-west-2 additionally receives a copy of every
+# other Region's events, marked detail.backupEvent, and us-east-1 backs up us-west-2.
 # https://docs.aws.amazon.com/health/latest/ug/choosing-a-region.html
 
 locals {
@@ -74,9 +62,6 @@ resource "aws_cloudwatch_event_rule" "this" {
   event_pattern = jsonencode({ source = ["aws.health"] })
 }
 
-# The IAM role is the only global resource here, so it is built from a prefix and AWS appends a
-# unique suffix. Instantiating the module in several Regions with the same name would otherwise
-# collide on it.
 resource "aws_iam_role" "invoke" {
   name_prefix = "${var.name}-"
   description = "Lets EventBridge invoke the pipetail.cloud AWS Health API destination"
@@ -93,8 +78,7 @@ resource "aws_iam_role" "invoke" {
   })
 }
 
-# The trust above is unconditioned; this is what bounds the role: one destination, one action, no
-# ability to reach anything else in the account.
+# The trust above is unconditioned; the permission policy is what bounds the role.
 resource "aws_iam_role_policy" "invoke" {
   name = "invoke-api-destination"
   role = aws_iam_role.invoke.id
@@ -150,8 +134,8 @@ resource "aws_cloudwatch_event_target" "this" {
   arn       = aws_cloudwatch_event_api_destination.this.arn
   role_arn  = aws_iam_role.invoke.arn
 
-  # EventBridge otherwise retries a failing delivery for 24 hours. An hour rides out a blip; past
-  # that the event reaches the dead-letter queue, where it can be read, while it is still current.
+  # EventBridge's default retries a failing delivery for 24 hours. An hour rides out a blip; past
+  # that the event lands in the dead-letter queue while it is still current.
   retry_policy {
     maximum_event_age_in_seconds = 3600
   }
