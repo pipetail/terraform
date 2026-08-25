@@ -28,6 +28,8 @@ locals {
 
 data "aws_region" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_cloudwatch_event_connection" "this" {
   name               = var.name
   description        = "API key for sending AWS Health events to pipetail.cloud"
@@ -66,6 +68,9 @@ resource "aws_iam_role" "invoke" {
   name_prefix = "${var.name}-"
   description = "Lets EventBridge invoke the pipetail.cloud AWS Health API destination"
 
+  # The SourceArn/SourceAccount conditions stop any other principal in the account from passing
+  # this role to a rule of its own and posting arbitrary payloads through the stored connection
+  # credential (cross-service confused deputy).
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -73,12 +78,15 @@ resource "aws_iam_role" "invoke" {
         Effect    = "Allow"
         Principal = { Service = "events.amazonaws.com" }
         Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+          ArnLike      = { "aws:SourceArn" = aws_cloudwatch_event_rule.this.arn }
+        }
       }
     ]
   })
 }
 
-# The trust above is unconditioned; the permission policy is what bounds the role.
 resource "aws_iam_role_policy" "invoke" {
   name = "invoke-api-destination"
   role = aws_iam_role.invoke.id
@@ -130,7 +138,7 @@ resource "aws_sqs_queue_policy" "dlq" {
 resource "aws_cloudwatch_event_target" "this" {
   # No input transformer: pipetail.cloud reads the EventBridge envelope as AWS sends it.
   rule      = aws_cloudwatch_event_rule.this.name
-  target_id = "pipetail-cloud-ingest"
+  target_id = var.target_id
   arn       = aws_cloudwatch_event_api_destination.this.arn
   role_arn  = aws_iam_role.invoke.arn
 
