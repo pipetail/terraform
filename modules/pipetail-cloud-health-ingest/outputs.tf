@@ -1,16 +1,15 @@
 output "set_key_command" {
-  description = "Run this once after apply, with the AWS Health ingest key generated in pipetail.cloud under Settings pasted in place of the placeholder. It writes the key straight to EventBridge, which is why the key never enters Terraform state. Rotating the key is the same command with a new value, and no apply is needed."
-  value = format(
-    "aws events update-connection --name %s --region %s --auth-parameters '%s'",
-    aws_cloudwatch_event_connection.this.name,
-    data.aws_region.current.name,
-    jsonencode({
-      ApiKeyAuthParameters = {
-        ApiKeyName  = local.ingest_key_header
-        ApiKeyValue = "PASTE_INGEST_KEY_HERE"
-      }
-    }),
-  )
+  description = "Run this snippet once after apply; it prompts for the AWS Health ingest key generated in pipetail.cloud under Settings with the input hidden. The key is written straight to EventBridge, which is why it never enters Terraform state, and it stays out of the process argv and shell history: the printf builtin writes it into a mktemp-owned payload file that a trap removes even on interruption. Rotating the key is the same snippet with the new value, and no apply is needed. Needs bash or zsh."
+  value       = <<-EOT
+    (
+      set -e
+      d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+      printf 'Paste the AWS Health ingest key (input hidden): ' >&2
+      IFS= read -rs key; printf '\n' >&2
+      printf '{"Name":"%s","AuthParameters":{"ApiKeyAuthParameters":{"ApiKeyName":"%s","ApiKeyValue":"%s"}}}' '${aws_cloudwatch_event_connection.this.name}' '${local.ingest_key_header}' "$key" > "$d/connection.json"
+      aws events update-connection --region ${data.aws_region.current.name} --cli-input-json "file://$d/connection.json"
+    )
+  EOT
 }
 
 output "rule_arn" {
