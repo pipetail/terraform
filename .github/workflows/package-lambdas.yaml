@@ -10,6 +10,7 @@ on:
       - 'src/*/*.mjs'
       - 'src/*/*.js'
       - 'src/*/package.json'
+      - 'src/*/package-lock.json'
       - 'scripts/package-lambdas.sh'
 
 jobs:
@@ -28,6 +29,27 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
+
+      - name: Verify package versions
+        working-directory: src/aws-events-to-slack
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const pkg = require("./package.json");
+          const lock = require("./package-lock.json");
+          const lockVersions = [lock.version, lock.packages?.[""]?.version];
+          const versionsMatch =
+            typeof pkg.version === "string" &&
+            lockVersions.every((version) => version === pkg.version);
+
+          if (!versionsMatch) {
+            console.error(
+              `::error::package.json version ${pkg.version} must match package-lock.json versions ${lockVersions.join(", ")}`,
+            );
+            process.exit(1);
+          }
+
+          console.log(`Package versions match: ${pkg.version}`);
+          NODE
 
       - name: Detect changed lambdas
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
