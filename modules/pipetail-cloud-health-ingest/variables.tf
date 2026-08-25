@@ -20,6 +20,17 @@ variable "name" {
   }
 }
 
+variable "target_id" {
+  type        = string
+  description = "Target id on the EventBridge rule. Changing a target's id forces EventBridge to replace it, so set this to the existing id when adopting a target that was created outside the module; leave the default everywhere else."
+  default     = "pipetail-cloud-ingest"
+
+  validation {
+    condition     = can(regex("^[.\\-_A-Za-z0-9]{1,64}$", var.target_id))
+    error_message = "target_id must be 1-64 characters of letters, digits, dots, hyphens or underscores, per the EventBridge PutTargets constraints."
+  }
+}
+
 variable "create_dlq" {
   type        = bool
   description = "Create an SQS dead-letter queue holding events EventBridge could not deliver. With this off, an event EventBridge gives up on is dropped and no copy of it exists anywhere."
