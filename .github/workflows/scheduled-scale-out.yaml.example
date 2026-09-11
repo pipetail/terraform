@@ -33,7 +33,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply - scale out Aurora readers
-        uses: dflook/terraform-apply@e8f63bf2f00c7b4fa798f0102bc406b04c789ee0 # v3.0.1
+        uses: dflook/terraform-apply@82a1042d40c66856406bf648832fc5d6b03ca74c # v3.1
         with:
           path: examples/05-aws-complete
           auto_approve: true
