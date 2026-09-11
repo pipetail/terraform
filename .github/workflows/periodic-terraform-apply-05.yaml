@@ -37,6 +37,6 @@ jobs:
           auto_approve: true
 
       - name: Terraform destroy
-        uses: dflook/terraform-destroy@37a3c58cece67f528e70ffae7951eb222fb343fe # v3
+        uses: dflook/terraform-destroy@e800f4e75859cf422d7a1c6aa68480973ed55455 # v3
         with:
           path: examples/05-aws-complete
