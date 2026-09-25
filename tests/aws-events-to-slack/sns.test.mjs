@@ -256,6 +256,20 @@ describe("unrecognised SNS messages", () => {
     assert.equal(forward.severity, "medium");
     assert.equal(forward.body, '{"foo":"bar"}');
   });
+
+  it("show the subject and raw text of a plain-text message", async () => {
+    const subject = "RDS Notification Message";
+    const text =
+      "This is a message to notify that RDS will attempt to send you event notifications of type db-instance to the topic arn:aws:sns:eu-west-1:123456789012:example-topic.";
+
+    const { message, forward } = await send(text, { subject });
+
+    const rendered = JSON.stringify(message);
+    assert.ok(rendered.includes(subject), "subject missing from Slack message");
+    assert.ok(rendered.includes(text), "raw message missing from Slack message");
+    assert.equal(rendered.includes("```{}```"), false);
+    assert.ok(forward.body.includes(text), "raw message missing from log body");
+  });
 });
 
 describe("budget and anomaly notifications", () => {

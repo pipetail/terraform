@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME, THRESHOLDS_URL } from "../config.mjs";
-import { postToSlack, logSlackForward, severityFromColor, truncate } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor, truncate, SLACK_TEXT_LIMIT } from "../slack.mjs";
 
 function thresholdsContextBlock() {
   if (!THRESHOLDS_URL) return [];
@@ -27,6 +27,7 @@ const NEUTRAL_COLOR = "#9E9E9E";
 // and CloudWatch alarm names can be up to 255.
 const SLACK_HEADER_LIMIT = 150;
 const ALARM_TEXT_LIMIT = 1500;
+const CODE_FENCE = "```";
 
 const ALARM_STATES = {
   ALARM: { emoji: ":rotating_light:", color: "danger", phrase: "in ALARM" },
@@ -40,10 +41,12 @@ export async function handleSnsEvent(event) {
   const snsBody = snsRecord.Message;
 
   let snsMessage;
+  let rawText;
   try {
     snsMessage = JSON.parse(snsBody);
   } catch {
     snsMessage = parseBudgetText(snsBody);
+    rawText = snsBody;
   }
 
   if (snsMessage["Event Source"] === "db" || snsMessage["Event Message"]) {
@@ -70,13 +73,13 @@ export async function handleSnsEvent(event) {
     return { statusCode: 200, body: "OK" };
   }
 
-  const message = formatBudgetMessage(snsMessage, snsSubject);
+  const message = formatBudgetMessage(snsMessage, snsSubject, rawText);
   await postToSlack(message);
   logSlackForward({
     category: snsCategory(snsRecord.TopicArn),
     severity: severityFromColor(message.attachments?.[0]?.color),
     title: message.text,
-    body: budgetLogBody(snsMessage, snsSubject),
+    body: budgetLogBody(snsMessage, snsSubject, rawText),
   });
   return { statusCode: 200, body: "OK" };
 }
@@ -92,7 +95,7 @@ function rdsLogBody(rdsEvent) {
   return body;
 }
 
-function budgetLogBody(data, subject) {
+function budgetLogBody(data, subject, rawText) {
   if (subject?.includes("Budget") || data.budgetName) {
     const budgetName = data.budgetName || "Unknown Budget";
     const limit = data.budgetLimit?.amount
@@ -125,6 +128,8 @@ function budgetLogBody(data, subject) {
     }
     return body;
   }
+
+  if (rawText !== undefined) return rawText.replace(/\s+/g, " ").slice(0, 300);
 
   return JSON.stringify(data).slice(0, 300);
 }
@@ -170,7 +175,7 @@ function parseBudgetText(text) {
   };
 }
 
-function formatBudgetMessage(data, subject) {
+function formatBudgetMessage(data, subject, rawText) {
   if (subject?.includes("Budget") || data.budgetName) {
     return formatBudgetAlert(data);
   }
@@ -181,9 +186,17 @@ function formatBudgetMessage(data, subject) {
 
   const accountId = data.accountId || process.env.AWS_ACCOUNT_ID || "Unknown";
   const accountDisplay = AWS_ACCOUNT_NAME ? `${AWS_ACCOUNT_NAME} (${accountId})` : accountId;
+  const title =
+    rawText !== undefined && subject
+      ? truncate(`:bell: ${subject}`, SLACK_HEADER_LIMIT)
+      : `:bell: AWS Notification`;
+  const body =
+    rawText !== undefined
+      ? truncate(rawText, SLACK_TEXT_LIMIT - 2 * CODE_FENCE.length)
+      : JSON.stringify(data, null, 2);
 
   return {
-    text: `:bell: AWS Notification`,
+    text: title,
     attachments: [
       {
         color: NEUTRAL_COLOR,
@@ -192,7 +205,7 @@ function formatBudgetMessage(data, subject) {
             type: "header",
             text: {
               type: "plain_text",
-              text: `:bell: AWS Notification`,
+              text: title,
               emoji: true,
             },
           },
@@ -206,7 +219,7 @@ function formatBudgetMessage(data, subject) {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: `\`\`\`${JSON.stringify(data, null, 2)}\`\`\``,
+              text: `${CODE_FENCE}${body}${CODE_FENCE}`,
             },
           },
         ],
