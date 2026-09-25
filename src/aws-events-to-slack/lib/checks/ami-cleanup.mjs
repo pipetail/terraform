@@ -25,35 +25,40 @@ export async function check(regions) {
   const staleCutoff = new Date(Date.now() - AMI_STALE_AGE_DAYS * 24 * 60 * 60 * 1000);
 
   for (const region of regions) {
-    const client = new EC2Client({ region });
-    const response = await client.send(new DescribeImagesCommand({ Owners: ["self"] }));
-    const images = response.Images || [];
-    const inUse = await getInUseImageIds(client);
+    try {
+      const client = new EC2Client({ region });
+      const response = await client.send(new DescribeImagesCommand({ Owners: ["self"] }));
+      const images = response.Images || [];
+      const inUse = await getInUseImageIds(client);
 
-    const groups = new Map();
-    for (const image of images) {
-      if (!image.Name) continue;
-      const prefix = image.Name.replace(/-\d+$/, "");
-      if (!groups.has(prefix)) groups.set(prefix, []);
-      groups.get(prefix).push(image);
-    }
-
-    for (const [prefix, groupImages] of groups) {
-      if (groupImages.length <= 1) continue;
-      groupImages.sort((a, b) => new Date(b.CreationDate) - new Date(a.CreationDate));
-      for (const image of groupImages.slice(1)) {
-        if (inUse.has(image.ImageId)) continue;
-        const createdAt = new Date(image.CreationDate);
-        if (createdAt > staleCutoff) continue;
-        const ageDays = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
-        stale.push({
-          id: image.ImageId,
-          name: image.Name,
-          created: new Date(image.CreationDate).toISOString().split("T")[0],
-          ageDays,
-          region,
-        });
+      const groups = new Map();
+      for (const image of images) {
+        if (!image.Name) continue;
+        const prefix = image.Name.replace(/-\d+$/, "");
+        if (!groups.has(prefix)) groups.set(prefix, []);
+        groups.get(prefix).push(image);
       }
+
+      for (const [prefix, groupImages] of groups) {
+        if (groupImages.length <= 1) continue;
+        groupImages.sort((a, b) => new Date(b.CreationDate) - new Date(a.CreationDate));
+        for (const image of groupImages.slice(1)) {
+          if (inUse.has(image.ImageId)) continue;
+          const createdAt = new Date(image.CreationDate);
+          if (createdAt > staleCutoff) continue;
+          const ageDays = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+          stale.push({
+            id: image.ImageId,
+            name: image.Name,
+            created: new Date(image.CreationDate).toISOString().split("T")[0],
+            ageDays,
+            region,
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch AMI cleanup in ${region}:`, error);
+      stale.push({ checkError: true, region, message: error.message });
     }
   }
 
@@ -61,12 +66,15 @@ export async function check(regions) {
 }
 
 export function summarize(findings) {
-  return findings.map((ami) =>
+  return findings.filter((f) => !f.checkError).map((ami) =>
     `${ami.id} ${ami.name} (${ami.region}) created ${ami.created} (${ami.ageDays}d old)`,
   );
 }
 
 export function format(findings) {
+  const errors = findings.filter((f) => f.checkError);
+  findings = findings.filter((f) => !f.checkError);
+
   let text = `:frame_with_picture: Stale AMIs Report\n\n`;
   text += `*Stale AMIs (not latest, >${AMI_STALE_AGE_DAYS}d old):* ${findings.length}\n`;
 
@@ -75,6 +83,13 @@ export function format(findings) {
   }
   if (findings.length > 20) {
     text += `\n  ...and ${findings.length - 20} more`;
+  }
+
+  if (errors.length > 0) {
+    text += `\n\n:x: *Check errors:*\n`;
+    for (const e of errors) {
+      text += `\n* region \`${e.region}\`: check failed: ${e.message}`;
+    }
   }
 
   text += `\n\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;
