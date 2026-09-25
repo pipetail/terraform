@@ -6,36 +6,41 @@ export async function check(regions) {
   const pendingStatuses = new Set(["not-applied", "waiting-to-start", "scheduled"]);
 
   for (const region of regions) {
-    const client = new ElastiCacheClient({ region });
+    try {
+      const client = new ElastiCacheClient({ region });
 
-    // Build a map of existing clusters/replication groups and their engines,
-    // so we can skip updates for deleted clusters and engine-migrated clusters
-    // (e.g. redis -> valkey upgrades leave stale redis update actions behind)
-    const clusterEngines = new Map();
+      // Build a map of existing clusters/replication groups and their engines,
+      // so we can skip updates for deleted clusters and engine-migrated clusters
+      // (e.g. redis -> valkey upgrades leave stale redis update actions behind)
+      const clusterEngines = new Map();
 
-    const clustersResponse = await client.send(new DescribeCacheClustersCommand({}));
-    for (const c of clustersResponse.CacheClusters || []) {
-      clusterEngines.set(c.CacheClusterId, c.Engine);
-    }
-
-    const rgResponse = await client.send(new DescribeReplicationGroupsCommand({}));
-    for (const rg of rgResponse.ReplicationGroups || []) {
-      const firstMember = (rg.MemberClusters || [])[0];
-      if (firstMember && clusterEngines.has(firstMember)) {
-        clusterEngines.set(rg.ReplicationGroupId, clusterEngines.get(firstMember));
+      const clustersResponse = await client.send(new DescribeCacheClustersCommand({}));
+      for (const c of clustersResponse.CacheClusters || []) {
+        clusterEngines.set(c.CacheClusterId, c.Engine);
       }
-    }
 
-    const response = await client.send(new DescribeUpdateActionsCommand({}));
-
-    if (response.UpdateActions) {
-      for (const action of response.UpdateActions) {
-        if (!pendingStatuses.has(action.UpdateActionStatus)) continue;
-        const clusterId = action.ReplicationGroupId || action.CacheClusterId;
-        if (clusterId && !clusterEngines.has(clusterId)) continue;
-        if (clusterId && action.Engine && clusterEngines.get(clusterId) !== action.Engine) continue;
-        allActions.push({ ...action, Region: region });
+      const rgResponse = await client.send(new DescribeReplicationGroupsCommand({}));
+      for (const rg of rgResponse.ReplicationGroups || []) {
+        const firstMember = (rg.MemberClusters || [])[0];
+        if (firstMember && clusterEngines.has(firstMember)) {
+          clusterEngines.set(rg.ReplicationGroupId, clusterEngines.get(firstMember));
+        }
       }
+
+      const response = await client.send(new DescribeUpdateActionsCommand({}));
+
+      if (response.UpdateActions) {
+        for (const action of response.UpdateActions) {
+          if (!pendingStatuses.has(action.UpdateActionStatus)) continue;
+          const clusterId = action.ReplicationGroupId || action.CacheClusterId;
+          if (clusterId && !clusterEngines.has(clusterId)) continue;
+          if (clusterId && action.Engine && clusterEngines.get(clusterId) !== action.Engine) continue;
+          allActions.push({ ...action, Region: region });
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch ElastiCache updates in ${region}:`, error);
+      allActions.push({ checkError: true, region, message: error.message });
     }
   }
 
@@ -43,7 +48,7 @@ export async function check(regions) {
 }
 
 export function summarize(actions) {
-  return actions.map((action) => {
+  return actions.filter((a) => !a.checkError).map((action) => {
     const groupId = action.ReplicationGroupId || action.CacheClusterId || "unknown";
     const severity = action.ServiceUpdateSeverity || "unknown";
     const updateName = action.ServiceUpdateName || "unknown";
@@ -55,6 +60,9 @@ export function summarize(actions) {
 }
 
 export function format(actions) {
+  const errors = actions.filter((a) => a.checkError);
+  actions = actions.filter((a) => !a.checkError);
+
   let text = `:calendar: ElastiCache Pending Updates\n\n${actions.length} pending update(s):\n`;
 
   for (const action of actions) {
@@ -68,6 +76,13 @@ export function format(actions) {
 
     text += `\n* \`${groupId}\` (${region})`;
     text += `\n  - ${updateName} | Severity: ${severity} | Apply by: ${applyBy}`;
+  }
+
+  if (errors.length > 0) {
+    text += `\n\n:x: *Check errors:*\n`;
+    for (const e of errors) {
+      text += `\n* region \`${e.region}\`: check failed: ${e.message}`;
+    }
   }
 
   text += `\n\nAccount: ${AWS_ACCOUNT_NAME || "Unknown"}`;

@@ -7,11 +7,16 @@ export async function check(regions) {
   const warnings = [];
 
   for (const region of regions) {
-    const rdsWarnings = await getRdsEolWarnings(region, now);
-    warnings.push(...rdsWarnings);
+    try {
+      const rdsWarnings = await getRdsEolWarnings(region, now);
+      warnings.push(...rdsWarnings);
 
-    const elasticacheWarnings = await getElasticacheEolWarnings(region, now);
-    warnings.push(...elasticacheWarnings);
+      const elasticacheWarnings = await getElasticacheEolWarnings(region, now);
+      warnings.push(...elasticacheWarnings);
+    } catch (error) {
+      console.error(`Failed to fetch Engine EOL in ${region}:`, error);
+      warnings.push({ checkError: true, region, message: error.message });
+    }
   }
 
   return warnings;
@@ -110,13 +115,16 @@ function checkEolDate(eolEntry, now) {
 }
 
 export function summarize(warnings) {
-  return warnings.map((w) => {
+  return warnings.filter((w) => !w.checkError).map((w) => {
     const status = w.severity === "expired" ? "EXPIRED" : `${w.monthsRemaining} month(s) remaining`;
     return `${w.name} ${w.engine} ${w.version} (${w.region}): EOL ${w.eolDate}, ${status}, upgrade to ${w.successor}`;
   });
 }
 
 export function format(warnings) {
+  const errors = warnings.filter((w) => w.checkError);
+  warnings = warnings.filter((w) => !w.checkError);
+
   const urgent = warnings.filter((w) => w.severity === "expired" || w.severity === "urgent");
   const info = warnings.filter((w) => w.severity === "warning");
 
@@ -138,6 +146,13 @@ export function format(warnings) {
       text += `\n* \`${w.name}\` — ${w.engine} ${w.version} (${w.region})`;
       text += `\n  EOL: ${w.eolDate} — ${w.monthsRemaining} month(s) remaining`;
       text += `\n  Upgrade to: ${w.successor}`;
+    }
+  }
+
+  if (errors.length > 0) {
+    text += `\n\n:x: *Check errors:*\n`;
+    for (const e of errors) {
+      text += `\n* region \`${e.region}\`: check failed: ${e.message}`;
     }
   }
 

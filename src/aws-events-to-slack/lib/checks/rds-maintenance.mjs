@@ -5,24 +5,29 @@ export async function check(regions) {
   const allActions = [];
 
   for (const region of regions) {
-    const client = new RDSClient({ region });
-    let marker;
+    try {
+      const client = new RDSClient({ region });
+      let marker;
 
-    do {
-      const response = await client.send(new DescribePendingMaintenanceActionsCommand({ Marker: marker }));
+      do {
+        const response = await client.send(new DescribePendingMaintenanceActionsCommand({ Marker: marker }));
 
-      for (const action of response.PendingMaintenanceActions || []) {
-        allActions.push({ ...action, Region: region });
-      }
-      marker = response.Marker;
-    } while (marker);
+        for (const action of response.PendingMaintenanceActions || []) {
+          allActions.push({ ...action, Region: region });
+        }
+        marker = response.Marker;
+      } while (marker);
+    } catch (error) {
+      console.error(`Failed to fetch RDS maintenance in ${region}:`, error);
+      allActions.push({ checkError: true, region, message: error.message });
+    }
   }
 
   return allActions;
 }
 
 export function summarize(actions) {
-  return actions.map((action) => {
+  return actions.filter((a) => !a.checkError).map((action) => {
     const arn = action.ResourceIdentifier || "";
     const resourceName = arn.split(":").pop() || arn;
     const details = (action.PendingMaintenanceActionDetails || []).map((detail) => {
@@ -39,6 +44,9 @@ export function summarize(actions) {
 }
 
 export function format(actions) {
+  const errors = actions.filter((a) => a.checkError);
+  actions = actions.filter((a) => !a.checkError);
+
   const totalActions = actions.reduce(
     (sum, a) => sum + (a.PendingMaintenanceActionDetails?.length || 0),
     0,
@@ -67,6 +75,13 @@ export function format(actions) {
       if (description) {
         text += `\n    "${description}"`;
       }
+    }
+  }
+
+  if (errors.length > 0) {
+    text += `\n\n:x: *Check errors:*\n`;
+    for (const e of errors) {
+      text += `\n* region \`${e.region}\`: check failed: ${e.message}`;
     }
   }
 

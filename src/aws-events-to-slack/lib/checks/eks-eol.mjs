@@ -6,34 +6,39 @@ export async function check(regions) {
   const warnings = [];
 
   for (const region of regions) {
-    const client = new EKSClient({ region });
-    let nextToken;
+    try {
+      const client = new EKSClient({ region });
+      let nextToken;
 
-    do {
-      const listResponse = await client.send(new ListClustersCommand({ nextToken }));
-      for (const clusterName of listResponse.clusters || []) {
-        const descResponse = await client.send(new DescribeClusterCommand({ name: clusterName }));
-        const cluster = descResponse.cluster;
-        if (!cluster) continue;
+      do {
+        const listResponse = await client.send(new ListClustersCommand({ nextToken }));
+        for (const clusterName of listResponse.clusters || []) {
+          const descResponse = await client.send(new DescribeClusterCommand({ name: clusterName }));
+          const cluster = descResponse.cluster;
+          if (!cluster) continue;
 
-        const version = cluster.version;
-        const eolEntry = EKS_EOL_DATES[version];
-        if (!eolEntry) continue;
+          const version = cluster.version;
+          const eolEntry = EKS_EOL_DATES[version];
+          if (!eolEntry) continue;
 
-        const result = checkEolDate(eolEntry, now);
-        if (!result) continue;
+          const result = checkEolDate(eolEntry, now);
+          if (!result) continue;
 
-        warnings.push({
-          name: clusterName,
-          version,
-          region,
-          ...result,
-          successor: eolEntry.successor,
-          eolDate: eolEntry.eol,
-        });
-      }
-      nextToken = listResponse.nextToken;
-    } while (nextToken);
+          warnings.push({
+            name: clusterName,
+            version,
+            region,
+            ...result,
+            successor: eolEntry.successor,
+            eolDate: eolEntry.eol,
+          });
+        }
+        nextToken = listResponse.nextToken;
+      } while (nextToken);
+    } catch (error) {
+      console.error(`Failed to fetch EKS EOL in ${region}:`, error);
+      warnings.push({ checkError: true, region, message: error.message });
+    }
   }
 
   return warnings;
@@ -57,13 +62,16 @@ function checkEolDate(eolEntry, now) {
 }
 
 export function summarize(warnings) {
-  return warnings.map((w) => {
+  return warnings.filter((w) => !w.checkError).map((w) => {
     const status = w.severity === "expired" ? "EXPIRED" : `${w.monthsRemaining} month(s) remaining`;
     return `${w.name} EKS ${w.version} (${w.region}): EOL ${w.eolDate}, ${status}, upgrade to ${w.successor}`;
   });
 }
 
 export function format(warnings) {
+  const errors = warnings.filter((w) => w.checkError);
+  warnings = warnings.filter((w) => !w.checkError);
+
   const urgent = warnings.filter((w) => w.severity === "expired" || w.severity === "urgent");
   const info = warnings.filter((w) => w.severity === "warning");
 
@@ -85,6 +93,13 @@ export function format(warnings) {
       text += `\n* \`${w.name}\` — EKS ${w.version} (${w.region})`;
       text += `\n  EOL: ${w.eolDate} — ${w.monthsRemaining} month(s) remaining`;
       text += `\n  Upgrade to: ${w.successor}`;
+    }
+  }
+
+  if (errors.length > 0) {
+    text += `\n\n:x: *Check errors:*\n`;
+    for (const e of errors) {
+      text += `\n* region \`${e.region}\`: check failed: ${e.message}`;
     }
   }
 
