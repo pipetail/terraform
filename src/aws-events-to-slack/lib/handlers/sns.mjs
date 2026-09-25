@@ -1,5 +1,5 @@
 import { AWS_ACCOUNT_NAME, THRESHOLDS_URL } from "../config.mjs";
-import { postToSlack, logSlackForward, severityFromColor } from "../slack.mjs";
+import { postToSlack, logSlackForward, severityFromColor, truncate } from "../slack.mjs";
 
 function thresholdsContextBlock() {
   if (!THRESHOLDS_URL) return [];
@@ -19,6 +19,19 @@ const EVENT_CATEGORIES = {
   recovery: { emoji: ":white_check_mark:", color: "good" },
   notification: { emoji: ":bell:", color: "#439FE0" },
   default: { emoji: ":cd:", color: "#439FE0" },
+};
+
+const NEUTRAL_COLOR = "#9E9E9E";
+
+// Slack rejects the whole message when a header's plain_text exceeds 150 chars,
+// and CloudWatch alarm names can be up to 255.
+const SLACK_HEADER_LIMIT = 150;
+const ALARM_TEXT_LIMIT = 1500;
+
+const ALARM_STATES = {
+  ALARM: { emoji: ":rotating_light:", color: "danger", phrase: "in ALARM" },
+  OK: { emoji: ":white_check_mark:", color: "good", phrase: "recovered (OK)" },
+  INSUFFICIENT_DATA: { emoji: ":grey_question:", color: NEUTRAL_COLOR, phrase: "has INSUFFICIENT_DATA" },
 };
 
 export async function handleSnsEvent(event) {
@@ -41,6 +54,18 @@ export async function handleSnsEvent(event) {
       severity: severityFromColor(message.attachments?.[0]?.color),
       title: message.text,
       body: rdsLogBody(snsMessage),
+    });
+    return { statusCode: 200, body: "OK" };
+  }
+
+  if (snsMessage.AlarmName && snsMessage.NewStateValue) {
+    const message = formatCloudWatchAlarm(snsMessage);
+    await postToSlack(message);
+    logSlackForward({
+      category: alarmCategory(snsRecord.TopicArn),
+      severity: severityFromColor(message.attachments?.[0]?.color),
+      title: message.text,
+      body: alarmLogBody(snsMessage),
     });
     return { statusCode: 200, body: "OK" };
   }
@@ -104,6 +129,18 @@ function budgetLogBody(data, subject) {
   return JSON.stringify(data).slice(0, 300);
 }
 
+function alarmLogBody(alarm) {
+  const region = extractRegionFromArn(alarm.AlarmArn) || alarm.Region || "Unknown";
+  let body = `${alarm.AlarmName} ${alarm.OldStateValue || "Unknown"} -> ${alarm.NewStateValue} in ${region}`;
+  if (alarm.StateChangeTime) body += ` at ${alarm.StateChangeTime}`;
+  if (alarm.NewStateReason) body += `: ${alarm.NewStateReason.replace(/\s+/g, " ").slice(0, 300)}`;
+  return body;
+}
+
+function alarmCategory(topicArn) {
+  return snsCategory(topicArn) === "database" ? "database" : "ops";
+}
+
 function snsCategory(topicArn = "") {
   if (topicArn.includes("db-monitoring")) return "database";
   if (topicArn.includes("error-alerts")) return "ops";
@@ -146,18 +183,16 @@ function formatBudgetMessage(data, subject) {
   const accountDisplay = AWS_ACCOUNT_NAME ? `${AWS_ACCOUNT_NAME} (${accountId})` : accountId;
 
   return {
-    username: "AWS Budget Alerts",
-    icon_emoji: ":money_with_wings:",
-    text: `:warning: AWS Cost Alert`,
+    text: `:bell: AWS Notification`,
     attachments: [
       {
-        color: "#ECB22E",
+        color: NEUTRAL_COLOR,
         blocks: [
           {
             type: "header",
             text: {
               type: "plain_text",
-              text: `:warning: AWS Cost Alert`,
+              text: `:bell: AWS Notification`,
               emoji: true,
             },
           },
@@ -174,7 +209,6 @@ function formatBudgetMessage(data, subject) {
               text: `\`\`\`${JSON.stringify(data, null, 2)}\`\`\``,
             },
           },
-          ...thresholdsContextBlock(),
         ],
       },
     ],
@@ -327,6 +361,68 @@ function formatAnomalyAlert(data) {
     attachments: [
       {
         color: "#E01E5A",
+        blocks,
+      },
+    ],
+  };
+}
+
+function formatCloudWatchAlarm(alarm) {
+  const state = ALARM_STATES[alarm.NewStateValue] || {
+    emoji: ":bell:",
+    color: NEUTRAL_COLOR,
+    phrase: alarm.NewStateValue,
+  };
+  const alarmName = alarm.AlarmName;
+  const region = extractRegionFromArn(alarm.AlarmArn) || alarm.Region || "Unknown";
+  const accountId = alarm.AWSAccountId || extractAccountIdFromArn(alarm.AlarmArn) || "Unknown";
+  const accountDisplay = AWS_ACCOUNT_NAME ? `${AWS_ACCOUNT_NAME} (${accountId})` : accountId;
+
+  const blocks = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: truncate(`${state.emoji} ${alarmName} ${state.phrase}`, SLACK_HEADER_LIMIT),
+        emoji: true,
+      },
+    },
+  ];
+
+  if (alarm.AlarmDescription) {
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: `*Description:*\n${truncate(alarm.AlarmDescription, ALARM_TEXT_LIMIT)}` },
+    });
+  }
+
+  if (alarm.NewStateReason) {
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: `*Reason:*\n${truncate(alarm.NewStateReason, ALARM_TEXT_LIMIT)}` },
+    });
+  }
+
+  blocks.push(
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*State:*\n${alarm.OldStateValue || "Unknown"} → ${alarm.NewStateValue}` },
+        { type: "mrkdwn", text: `*Region:*\n${region}` },
+        { type: "mrkdwn", text: `*Time:*\n${alarm.StateChangeTime || "Unknown"}` },
+      ],
+    },
+    {
+      type: "context",
+      elements: [{ type: "mrkdwn", text: `Account: ${accountDisplay}` }],
+    }
+  );
+
+  return {
+    text: `${state.emoji} CloudWatch Alarm: ${alarmName} ${state.phrase}`,
+    attachments: [
+      {
+        color: state.color,
         blocks,
       },
     ],
