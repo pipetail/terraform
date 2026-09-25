@@ -12,6 +12,7 @@ on:
       - 'src/*/package.json'
       - 'src/*/package-lock.json'
       - 'scripts/package-lambdas.sh'
+      - 'tests/aws-events-to-slack/**'
 
 jobs:
   package:
@@ -29,6 +30,9 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
+
+      - name: Run aws-events-to-slack unit tests
+        run: node --test 'tests/aws-events-to-slack/*.test.mjs'
 
       - name: Verify package versions
         working-directory: src/aws-events-to-slack
