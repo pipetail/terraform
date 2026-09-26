@@ -42,12 +42,12 @@ export function nextVersion(current, bump) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-// Docs do not change what a consumer resolves at a ref, so they never cut a release.
+// Docs and tests do not change how the module behaves for a consumer, so they never cut a release.
 export function touchedModules(files) {
   const mods = new Set();
   for (const f of files) {
     const m = /^modules\/([^/]+)\/(.+)$/.exec(f);
-    if (m && !m[2].endsWith(".md")) mods.add(m[1]);
+    if (m && !m[2].endsWith(".md") && !m[2].startsWith("tests/")) mods.add(m[1]);
   }
   return mods;
 }
@@ -110,7 +110,7 @@ function resolveBase(before) {
 function commitsTouching(base, mod) {
   const out = git(
     "log", "--format=%s%x1f%b%x1e", `${base}..HEAD`, "--",
-    `modules/${mod}/`, `:(exclude,glob)modules/${mod}/**/*.md`,
+    `modules/${mod}/`, `:(exclude,glob)modules/${mod}/**/*.md`, `:(exclude)modules/${mod}/tests/`,
   );
   return out
     .split("\x1e")

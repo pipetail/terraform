@@ -46,9 +46,14 @@ test("touchedModules ignores docs and files outside modules/", () => {
     "modules/eks/main.tf",
     "modules/eks/templates/user-data.toml.tftpl",
     "modules/kms/README.md",
+    "modules/github-oidc/tests/github_oidc.tftest.hcl",
     "examples/05-aws-complete/eks.tf",
   ]);
   assert.deepEqual([...mods], ["eks"]);
+});
+
+test("checkTitle does not require a module scope for test-only changes", () => {
+  assert.deepEqual(checkTitle("test(ci): add suite", ["modules/eks/tests/eks.tftest.hcl"], MODULES), []);
 });
 
 test("checkTitle accepts a single-module PR scoped to that module", () => {
