@@ -1,12 +1,4 @@
 #!/usr/bin/env node
-// Per-module releases. Each module is tagged <module>-vX.Y.Z; the bump comes from
-// the conventional-commit subjects that touched it since the previous push.
-//
-//   node module-release.mjs release       tag every module changed by this push
-//   node module-release.mjs check-title   validate a PR title against the modules it changes
-//
-// Set DRY_RUN=1 to print the releases instead of creating them.
-
 import { execFileSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
