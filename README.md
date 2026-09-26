@@ -121,28 +121,12 @@ There are several GitHub Actions workflows:
 - `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
 - `terraform-lock.yaml` - automatically updates `.terraform.lock.hcl` files for all platforms when provider versions change in PRs
 - `terraform-state-unlock.yaml` - scheduled workflow (daily 2 AM) that detects and removes stale S3 state locks (>4 hours old), also supports manual unlock via workflow_dispatch
-- `terraform-drift-detection.yaml` - scheduled workflow (twice daily at 8 AM and 4 PM UTC) that runs `terraform plan` on all environments to detect configuration drift
 - `packer-build.yaml` - reusable workflow for building AMIs with Packer
 - `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
 - `update-bottlerocket-ami.yaml` - weekly check for new Bottlerocket AMI releases, creates a PR to update the pinned version
 - `package-lambdas.yaml` - automatically packages Lambda functions when source code changes in PRs, commits updated zip files back to the branch
 
 All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
-
-### Drift Detection
-
-The `terraform-drift-detection.yaml` workflow automatically detects when infrastructure has been modified outside of Terraform (e.g., via AWS Console or CLI). This is important because:
-
-- **Unexpected changes**: Someone may have made emergency fixes directly in AWS that need to be captured in code
-- **Security**: Unauthorized or accidental changes should be detected and reviewed
-- **State consistency**: Drift can cause future `terraform apply` runs to behave unexpectedly
-
-The workflow uses `terraform plan -detailed-exitcode` where exit code 2 indicates drift. When drift is detected:
-1. A summary is posted to the GitHub Actions step summary
-2. A GitHub issue is automatically created (with label `terraform-drift`) to track resolution
-3. The issue links to the workflow run for detailed plan output
-
-The workflow can also be triggered manually via `workflow_dispatch` for on-demand drift checks. Tool versions in CI workflows are explicitly pinned for reproducibility.
 
 ### Packer Builds
 
