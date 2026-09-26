@@ -15,8 +15,9 @@ variable "ami_version" {
   type = string
 }
 
-variable "subnet_id" {
-  type = string
+variable "subnet_name" {
+  type        = string
+  description = "Name tag of a public subnet in the example VPC; the build instance needs a route to the internet"
 }
 
 variable "config_file_path" {
@@ -44,7 +45,12 @@ source "amazon-ebs" "wireguard" {
   source_ami   = data.amazon-ami.ubuntu.id
   ssh_username = "ubuntu"
 
-  subnet_id = var.subnet_id
+  subnet_filter {
+    filters = {
+      "tag:Name" = var.subnet_name
+    }
+  }
+  associate_public_ip_address = true
 
   tags = {
     Name = "wireguard"
