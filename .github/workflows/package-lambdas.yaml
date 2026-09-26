@@ -7,10 +7,7 @@ permissions:
 on:
   pull_request:
     paths:
-      - 'src/*/*.mjs'
-      - 'src/*/*.js'
-      - 'src/*/package.json'
-      - 'src/*/package-lock.json'
+      - 'src/*/**'
       - 'scripts/package-lambdas.sh'
       - 'tests/aws-events-to-slack/**'
 
