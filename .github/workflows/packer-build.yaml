@@ -175,10 +175,18 @@ jobs:
       - name: Packer Build
         if: steps.check-bot.outputs.skip != 'true'
         run: |
+          set -o pipefail
           cd "$PACKER_DIRECTORY"
-          packer build -var-file="$PKVARS_FILE" "$PKR_FILE" | tee build_output.txt
+          packer build -color=false -var-file="$PKVARS_FILE" "$PKR_FILE" | tee build_output.txt
 
-          AMI_ID=$(grep -oP 'ami-[a-z0-9]+' build_output.txt | tail -1)
+          # Only the artifact summary has "<region>: ami-..." on its own line. Other
+          # lines also name AMIs, such as the source image, so a looser match
+          # reports an image that was never built.
+          AMI_ID=$(sed -n 's/^[a-z0-9-]*: \(ami-[0-9a-f]*\)$/\1/p' build_output.txt | tail -1)
+          if [ -z "$AMI_ID" ]; then
+            echo "::error::packer build finished without an AMI artifact"
+            exit 1
+          fi
           echo "AMI_ID=$AMI_ID" >> "$GITHUB_ENV"
 
           printf '## Packer Build: %s\n\n' "$PACKER_NAME" >> "$GITHUB_STEP_SUMMARY"
