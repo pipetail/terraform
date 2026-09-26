@@ -1,4 +1,4 @@
 ami_version      = "1"
-subnet_id        = "subnet-0afe098eb13a29948"             // public-subnet
+subnet_name      = "wg-example-main-vpc-public-eu-west-1a"
 aws_region       = "eu-west-1"
 config_file_path = "wg0-prod.conf.tftpl"
