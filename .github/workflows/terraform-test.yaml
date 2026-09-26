@@ -1,0 +1,54 @@
+---
+name: terraform-test
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'modules/**'
+      - '.github/workflows/terraform-test.yaml'
+
+jobs:
+  terraform-test:
+    runs-on: ubuntu-latest
+    name: Run module tests
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: 1.14.4
+          terraform_wrapper: false
+
+      - name: terraform test
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/plugin-cache
+        run: |
+          set -uo pipefail
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          failed=()
+          found=0
+          for tests in modules/*/tests; do
+            [ -d "$tests" ] || continue
+            found=1
+            module="${tests%/tests}"
+            echo "::group::${module}"
+            if ! terraform -chdir="$module" init -input=false -no-color \
+              || ! terraform -chdir="$module" test -no-color; then
+              failed+=("$module")
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$found" = 0 ]; then
+            echo "::error::no modules/*/tests directory found"
+            exit 1
+          fi
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::error::terraform test failed in: ${failed[*]}"
+            exit 1
+          fi
