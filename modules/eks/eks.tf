@@ -50,6 +50,9 @@ module "eks" {
   kms_key_enable_default_policy = true
   kms_key_administrators        = var.kms_key_administrators
 
+  // Upstream ignores encryption_config.provider_key_arn and encrypts secrets
+  // with a key of its own unless this is false.
+  create_kms_key = false
 
   encryption_config = {
     resources        = ["secrets"]
