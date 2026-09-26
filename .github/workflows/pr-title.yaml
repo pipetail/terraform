@@ -1,0 +1,40 @@
+---
+name: pr-title
+
+permissions:
+  contents: read
+
+# The squash-merged title becomes the commit subject that module-release.yaml
+# turns into a version bump and release notes, so it is checked on every edit.
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    name: Check PR title
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+
+      - name: Run module-release unit tests
+        run: node --test 'tests/module-release/*.test.mjs'
+
+      - name: Check title against changed modules
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BASE: HEAD^1 # the checkout is the PR merge commit; its first parent is the base it merged into
+        run: node .github/scripts/module-release.mjs check-title

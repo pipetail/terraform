@@ -364,6 +364,20 @@ Reusable Terraform modules in `modules/`:
 | `kms` | Shared KMS key with key rotation, CloudWatch Logs and CloudTrail encryption |
 | `wireguard-ec2` | WireGuard VPN on EC2 with Packer AMI |
 
+### Versioning
+
+Each module is released on its own, as `<module>-vX.Y.Z`. Pin that tag:
+
+```hcl
+module "github_oidc" {
+  source = "github.com/pipetail/terraform//modules/github-oidc?ref=github-oidc-v1.0.0"
+}
+```
+
+`module-release.yaml` cuts the release when a change to the module lands on `master`. The bump comes from the squash-merged PR title: `fix(<module>):` is a patch, `feat(<module>):` a minor, and `!` or a `BREAKING CHANGE:` footer a major. `pr-title.yaml` rejects a PR whose title scope does not match the one module it changes. Changes that touch only `.md` files are not released.
+
+`aws-events-to-slack`, `pipetail-cloud-role` and `pipetail-cloud-health-ingest` keep their own release workflows. The repo-wide `v0.0.x` tags are no longer cut.
+
 ## naming conventions
 Basically just [this](https://www.terraform-best-practices.com/naming)
 
