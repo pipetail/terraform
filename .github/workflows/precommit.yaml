@@ -72,3 +72,11 @@ jobs:
             --show-diff-on-failure \
             --from-ref origin/${GITHUB_BASE_REF} \
             --to-ref HEAD
+
+      # pre-commit above checks only the files this PR changed, so a policy
+      # change or a rego test can pass here while the rest of the tree fails it.
+      - name: Policy checks on the whole tree
+        run: |
+          conftest verify --policy conftest-policies/ --no-color
+          git ls-files -z 'examples/*.tf' 'modules/*.tf' \
+            | xargs -0 conftest test --parser hcl2 --policy conftest-policies/ --no-color
