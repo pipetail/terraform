@@ -1,0 +1,87 @@
+---
+name: eks-e2e
+
+permissions:
+  id-token: write # for fetching the OIDC token
+  contents: read  # for actions/checkout
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: eks-e2e
+  cancel-in-progress: false
+
+env:
+  EXAMPLE: examples/07-aws-eks
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    name: 07-aws-eks - apply, check, destroy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsEksE2e
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: 1.14.4
+          terraform_wrapper: false
+
+      - name: terraform init
+        id: init
+        run: terraform -chdir="$EXAMPLE" init -input=false
+
+      # Step timeouts, not a job timeout: a job timeout would also cut off
+      # the destroy below and leave a cluster running.
+      - name: terraform apply
+        timeout-minutes: 40
+        run: terraform -chdir="$EXAMPLE" apply -input=false -auto-approve
+
+      - name: Wait for Ready nodes
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          aws eks update-kubeconfig --name "$(terraform -chdir="$EXAMPLE" output -raw cluster_name)"
+          until [ "$(kubectl get nodes --no-headers 2>/dev/null | wc -l)" -ge 1 ]; do
+            sleep 15
+          done
+          kubectl wait --for=condition=Ready nodes --all --timeout=10m
+          kubectl get nodes -o wide
+
+      - name: terraform destroy
+        if: always() && steps.init.outcome == 'success'
+        timeout-minutes: 40
+        run: terraform -chdir="$EXAMPLE" destroy -input=false -auto-approve
+
+      # KMS keys stay listed while pending deletion, which is expected.
+      - name: Check for leftovers
+        if: always() && steps.init.outcome == 'success'
+        run: |
+          set -euo pipefail
+          leftovers() {
+            aws resourcegroupstaggingapi get-resources \
+              --tag-filters Key=example,Values=07-aws-eks \
+              --query 'ResourceTagMappingList[].ResourceARN' --output text \
+              | tr '\t' '\n' | grep -v ':kms:' || true
+          }
+          left="$(leftovers)"
+          if [ -n "$left" ]; then
+            sleep 120
+            left="$(leftovers)"
+          fi
+          if [ -n "$left" ]; then
+            echo "::error::resources tagged example=07-aws-eks still exist after destroy:"
+            echo "$left"
+            exit 1
+          fi
