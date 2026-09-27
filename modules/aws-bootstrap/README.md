@@ -14,7 +14,7 @@ first, then add the backend block and re-run to migrate:
 
 ```hcl
 module "bootstrap" {
-  source = "github.com/pipetail/terraform//modules/aws-bootstrap"
+  source = "github.com/pipetail/terraform//modules/aws-bootstrap?ref=aws-bootstrap-v1.0.0"
 
   region      = "eu-west-1"
   name_prefix = "my-account"
@@ -41,6 +41,9 @@ terraform {
 
 Keep the bootstrap workspace's own state local (or in a separate bucket) if you want the
 bucket to remain destroyable without the state that manages it living inside it.
+
+[examples/06-minimal-aws-terraform-bootstrap](../../examples/06-minimal-aws-terraform-bootstrap)
+is a complete bootstrap workspace built on this module.
 
 ## Bucket naming
 
@@ -82,8 +85,8 @@ is genuinely disposable.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
-| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
+| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 5.15.4 |
+| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 5.15.4 |
 
 ## Resources
 

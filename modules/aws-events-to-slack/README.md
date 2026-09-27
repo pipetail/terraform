@@ -22,14 +22,18 @@ the only artifact a consumer needs to track.
 
 ```hcl
 module "aws_events_to_slack" {
-  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.8.2"
 
-  lambda_version = "1.0.0"
-  account_name   = "my-account"
-  regions        = "eu-west-1"
-  slack_channel  = "#aws-health"
+  lambda_version           = "1.8.2"
+  account_name             = "my-account"
+  regions                  = "eu-west-1"
+  slack_channel            = "#aws-health"
+  slack_webhook_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:aws-events-to-slack-AbCdEf"
 }
 ```
+
+[examples/05-aws-complete](../../examples/05-aws-complete/events.tf) deploys the module as part
+of a full account setup.
 
 Requires `curl` to be available wherever Terraform applies (CI runners and most workstations
 already have it).
