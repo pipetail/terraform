@@ -26,6 +26,11 @@ run "boots_the_given_ami_on_an_encrypted_root_volume" {
     condition     = output.security_group_id == module.sg.id
     error_message = "security_group_id must expose the WireGuard security group."
   }
+
+  assert {
+    condition     = module.ec2_instance.security_group_id == null
+    error_message = "The instance must carry only the WireGuard security group, not a second one from the ec2-instance module with open egress."
+  }
 }
 
 run "create_instance_false_skips_the_instance" {

@@ -47,6 +47,7 @@ module "ec2_instance" {
   user_data                   = var.user_data
   user_data_replace_on_change = true
 
+  create_security_group       = false
   vpc_security_group_ids      = [module.sg.id]
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
