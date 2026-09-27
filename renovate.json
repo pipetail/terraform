@@ -7,6 +7,16 @@
   "labels": [
     "dependencies"
   ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+    "conftest-policies/testdata/**"
+  ],
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
