@@ -8,6 +8,6 @@ subnets = {
 }
 
 // paste from packer
-wireguard_ami = "ami-05dff77713a4fa273"
+wireguard_ami = "ami-0124d88abc62aa11c"
 
 wireguard_public_key = "3I1I4p+FGkOoCjNHSmmyNDkGY8vmkSRSkg7q6DiS4go="
