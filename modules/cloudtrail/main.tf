@@ -144,7 +144,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail" {
 }
 
 resource "aws_iam_role" "cloudtrail" {
-  name = "cloudtrail-cloudwatch"
+  name = var.cloudwatch_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
