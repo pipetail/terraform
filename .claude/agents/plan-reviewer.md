@@ -56,8 +56,9 @@ reaches every example that calls the module, so a one-file diff can move resourc
 Anything you cannot trace to the diff is either drift being corrected or a change the author did not
 intend. Say which, and say when you cannot tell.
 
-`examples/05-aws-complete` is destroyed again after every apply, so its plan normally shows every
-resource as "to add". That is expected. Read it for what the new code creates, not for what changes.
+A root that nothing applies (check whether its apply workflows are disabled) has empty state, so its
+plan shows every resource as "to add". That is expected. Read it for what the new code creates, not
+for what changes.
 
 ## What to report
 
