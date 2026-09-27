@@ -55,7 +55,7 @@ account-specific.
 ## State locking
 
 S3 native locking (`use_lockfile = true`, Terraform 1.10+) is the default path and needs no
-table — `create_dynamodb_table` is `false`. Set it to `true` only for backends still using
+table, so `create_dynamodb_table` is `false`. Set it to `true` only for backends still using
 `dynamodb_table`. The default table name is not prefixed, so two bootstrapped stacks in the
 same account and region will fight over `terraform-state-lock` unless you override
 `dynamodb_table_name`.
@@ -64,7 +64,7 @@ same account and region will fight over `terraform-state-lock` unless you overri
 
 `state_bucket_force_destroy` is off by default. Turning it on lets `terraform destroy`
 delete the bucket along with every object version in it, which includes every historical
-copy of the state — versioning stops being a recovery path. Leave it off unless the bucket
+copy of the state, so versioning stops being a recovery path. Leave it off unless the bucket
 is genuinely disposable.
 
 <!-- BEGIN_TF_DOCS -->

@@ -43,8 +43,7 @@ already have it).
 AWS Health delivers events for global services (IAM, CloudFront, Route 53, ...) to
 `us-east-1`, while regional events arrive in their own region. To capture the global ones,
 deploy a second, Health-only instance through a `us-east-1` aliased provider with
-`create_account_global_resources = false` and a distinct `name`. See
-`examples/05-aws-complete/events.tf`.
+`create_account_global_resources = false` and a distinct `name`.
 
 ## Slack credentials
 
