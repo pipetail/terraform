@@ -26,7 +26,8 @@ resource "aws_elasticache_replication_group" "redis" {
   node_type                   = "cache.t4g.small"
   num_cache_clusters          = var.redis.node_num
 
-  engine         = "redis"
+  engine = "redis"
+  # renovate: datasource=endoflife-date depName=amazon-elasticache-redis versioning=loose
   engine_version = "6.2"
 
   port               = 6379

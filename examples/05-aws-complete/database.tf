@@ -14,7 +14,8 @@ module "db" {
   name          = "${var.name_prefix}-main"
   database_name = "app"
 
-  engine         = "aurora-postgresql"
+  engine = "aurora-postgresql"
+  # renovate: datasource=endoflife-date depName=amazon-aurora-postgresql versioning=loose
   engine_version = "16.6"
   engine_mode    = "provisioned"
 

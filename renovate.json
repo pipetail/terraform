@@ -62,17 +62,32 @@
       "datasourceTemplate": "github-tags"
     },
     {
-      "description": "Track EKS Kubernetes version in Terraform variables",
+      "description": "Track the EKS Kubernetes version against the versions EKS actually offers, not upstream Kubernetes tags, which appear months before EKS supports them",
       "customType": "regex",
       "managerFilePatterns": [
-        "/\\.tf$/"
+        "/\\.tf$/",
+        "/\\.tfvars$/"
       ],
       "matchStrings": [
         "k8s_version\\s*=\\s*\"(?<currentValue>[0-9]+\\.[0-9]+)\""
       ],
-      "depNameTemplate": "kubernetes/kubernetes",
-      "datasourceTemplate": "github-tags",
-      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+)\\.\\d+$"
+      "depNameTemplate": "amazon-eks",
+      "datasourceTemplate": "endoflife-date",
+      "versioningTemplate": "loose"
+    },
+    {
+      "description": "Update any value preceded by a `# renovate: datasource=... depName=...` (or `//`) comment in Terraform files",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.tf$/",
+        "/\\.tfvars$/",
+        "/\\.tftpl$/"
+      ],
+      "matchStrings": [
+        "(?:#|//)\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+registryUrl=(?<registryUrl>\\S+))?(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>\\S+))?\\s*\\n[^\\n=]*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}",
+      "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^v?(?<version>.+)${{/if}}"
     }
   ]
 }
