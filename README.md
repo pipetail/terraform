@@ -49,7 +49,7 @@ Each example is its own Terraform root with its own state. PRs get a `terraform 
 | [03-aws-github-actions-oidc](examples/03-aws-github-actions-oidc) | CI role for GitHub Actions without static keys | weekly apply |
 | [04-aws-wireguard-vpn](examples/04-aws-wireguard-vpn) | VPN host from a Packer AMI built in CI | weekly apply |
 | [05-aws-complete](examples/05-aws-complete) | A full account: EKS, Aurora, ElastiCache, ALB, CloudTrail, flow logs, budgets | plan on every PR |
-| [06-minimal-aws-terraform-bootstrap](examples/06-minimal-aws-terraform-bootstrap) | State backend created with Terraform and the `aws-bootstrap` module | weekly apply |
+| [06-minimal-aws-terraform-bootstrap](examples/06-minimal-aws-terraform-bootstrap) | State backend created with Terraform and the `aws-bootstrap` module | weekly apply, then destroy |
 
 ## How changes are checked
 
