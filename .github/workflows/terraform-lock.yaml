@@ -14,6 +14,7 @@ on:
       - "**/versions.tf"
       - "**/.terraform.lock.hcl"
       - "renovate.json"
+      - ".github/workflows/terraform-lock.yaml"
 
 jobs:
   terraform-lock:
