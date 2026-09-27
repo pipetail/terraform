@@ -1,4 +1,14 @@
 data "aws_caller_identity" "current" {}
+data "aws_partition" "current" {}
+data "aws_region" "current" {}
+
+locals {
+  trail_name = "${var.name_prefix}-global-events"
+
+  # Built by hand: the trail depends on the bucket policy, so the policy cannot
+  # reference aws_cloudtrail.main.arn without a dependency cycle.
+  trail_arn = "arn:${data.aws_partition.current.partition}:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
+}
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   name = "${var.name_prefix}-cloudtrail-logs"
@@ -9,7 +19,7 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 
 resource "aws_cloudtrail" "main" {
   # checkov:skip=CKV_AWS_252: Ensure CloudTrail defines an SNS Topic: We don't need SNS notifications here
-  name           = "${var.name_prefix}-global-events"
+  name           = local.trail_name
   s3_bucket_name = aws_s3_bucket.cloudtrail.id
 
   enable_log_file_validation = true
@@ -70,6 +80,11 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
         }
         Action   = "s3:GetBucketAcl"
         Resource = aws_s3_bucket.cloudtrail.arn
+        Condition = {
+          StringEquals = {
+            "aws:SourceArn" = local.trail_arn
+          }
+        }
       },
       {
         Sid    = "AWSCloudTrailWrite"
@@ -81,7 +96,23 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
         Resource = "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
         Condition = {
           StringEquals = {
-            "s3:x-amz-acl" = "bucket-owner-full-control"
+            "s3:x-amz-acl"  = "bucket-owner-full-control"
+            "aws:SourceArn" = local.trail_arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.cloudtrail.arn,
+          "${aws_s3_bucket.cloudtrail.arn}/*",
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
           }
         }
       }

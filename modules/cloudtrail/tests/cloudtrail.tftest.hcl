@@ -5,6 +5,19 @@ mock_provider "aws" {
     }
   }
 
+  mock_data "aws_partition" {
+    defaults = {
+      partition = "aws"
+    }
+  }
+
+  mock_data "aws_region" {
+    defaults = {
+      name   = "eu-west-1"
+      region = "eu-west-1"
+    }
+  }
+
   mock_resource "aws_s3_bucket" {
     defaults = {
       arn = "arn:aws:s3:::example-cloudtrail-global-events"
@@ -33,20 +46,21 @@ run "bucket_policy_lets_only_cloudtrail_write_under_the_account_prefix" {
   command = apply
 
   assert {
-    condition     = length(jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement) == 2
-    error_message = "The bucket policy must hold only the ACL check and write statements."
+    condition     = length([for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement : s if s.Effect == "Allow"]) == 2
+    error_message = "The bucket policy must allow only the ACL check and write statements."
   }
 
   assert {
     condition = alltrue([
       for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement :
-      s.Effect == "Allow" && s.Principal == { Service = "cloudtrail.amazonaws.com" }
+      s.Principal == { Service = "cloudtrail.amazonaws.com" }
+      if s.Effect == "Allow"
     ])
-    error_message = "Every bucket policy statement must grant only the CloudTrail service principal."
+    error_message = "Every bucket policy Allow statement must grant only the CloudTrail service principal."
   }
 
   assert {
-    condition = [for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement : [s.Action, s.Resource]] == [
+    condition = [for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement : [s.Action, s.Resource] if s.Effect == "Allow"] == [
       ["s3:GetBucketAcl", "arn:aws:s3:::example-cloudtrail-global-events"],
       ["s3:PutObject", "arn:aws:s3:::example-cloudtrail-global-events/AWSLogs/123456789012/*"],
     ]
@@ -144,5 +158,28 @@ run "log_expiry_rule_matches_on_prefix_only" {
   assert {
     condition     = length([for r in aws_s3_bucket_lifecycle_configuration.cloudtrail.rule : r if r.id == "log"]) == 1
     error_message = "The log expiry rule must exist."
+  }
+}
+
+run "bucket_policy_is_scoped_to_this_trail_and_denies_plain_http" {
+  command = apply
+
+  assert {
+    condition = alltrue([
+      for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement :
+      try(s.Condition.StringEquals["aws:SourceArn"], null) == "arn:aws:cloudtrail:eu-west-1:123456789012:trail/${aws_cloudtrail.main.name}"
+      if s.Effect == "Allow"
+    ])
+    error_message = "Every CloudTrail grant must carry aws:SourceArn of this trail, or any trail in any account can write into the bucket."
+  }
+
+  assert {
+    condition = anytrue([
+      for s in jsondecode(aws_s3_bucket_policy.cloudtrail.policy).Statement :
+      s.Effect == "Deny" && s.Principal == "*" && s.Action == "s3:*"
+      && try(s.Condition.Bool["aws:SecureTransport"], null) == "false"
+      && try(toset(s.Resource) == toset(["arn:aws:s3:::example-cloudtrail-global-events", "arn:aws:s3:::example-cloudtrail-global-events/*"]), false)
+    ])
+    error_message = "The bucket policy must deny every request to the bucket and its objects that does not use TLS."
   }
 }
