@@ -14,7 +14,7 @@ first, then add the backend block and re-run to migrate:
 
 ```hcl
 module "bootstrap" {
-  source = "github.com/pipetail/terraform//modules/aws-bootstrap"
+  source = "github.com/pipetail/terraform//modules/aws-bootstrap?ref=aws-bootstrap-v1.0.0"
 
   region      = "eu-west-1"
   name_prefix = "my-account"
@@ -42,6 +42,9 @@ terraform {
 Keep the bootstrap workspace's own state local (or in a separate bucket) if you want the
 bucket to remain destroyable without the state that manages it living inside it.
 
+[examples/06-minimal-aws-terraform-bootstrap](../../examples/06-minimal-aws-terraform-bootstrap)
+is a complete bootstrap workspace built on this module.
+
 ## Bucket naming
 
 The bucket is named `${name_prefix}-${bucket_purpose}-${region}`. S3 bucket names are a
@@ -52,7 +55,7 @@ account-specific.
 ## State locking
 
 S3 native locking (`use_lockfile = true`, Terraform 1.10+) is the default path and needs no
-table — `create_dynamodb_table` is `false`. Set it to `true` only for backends still using
+table, so `create_dynamodb_table` is `false`. Set it to `true` only for backends still using
 `dynamodb_table`. The default table name is not prefixed, so two bootstrapped stacks in the
 same account and region will fight over `terraform-state-lock` unless you override
 `dynamodb_table_name`.
@@ -61,7 +64,7 @@ same account and region will fight over `terraform-state-lock` unless you overri
 
 `state_bucket_force_destroy` is off by default. Turning it on lets `terraform destroy`
 delete the bucket along with every object version in it, which includes every historical
-copy of the state — versioning stops being a recovery path. Leave it off unless the bucket
+copy of the state, so versioning stops being a recovery path. Leave it off unless the bucket
 is genuinely disposable.
 
 <!-- BEGIN_TF_DOCS -->
@@ -82,8 +85,8 @@ is genuinely disposable.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
-| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 5.15.3 |
+| <a name="module_state_logs"></a> [state\_logs](#module\_state\_logs) | terraform-aws-modules/s3-bucket/aws | 5.15.4 |
+| <a name="module_terraform_state"></a> [terraform\_state](#module\_terraform\_state) | terraform-aws-modules/s3-bucket/aws | 5.15.4 |
 
 ## Resources
 
