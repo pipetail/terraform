@@ -150,6 +150,7 @@ resource "aws_lambda_function" "this" {
       SLACK_BOT_TOKEN           = try(jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)["SLACK_BOT_TOKEN"], "")
       SLACK_CHANNEL             = var.slack_channel
       AWS_ACCOUNT_NAME          = var.account_name
+      AWS_ACCOUNT_ID            = data.aws_caller_identity.current.account_id
       AWS_REGIONS               = var.regions
       ACCESS_KEY_WARNING_DAYS   = tostring(var.access_key_warning_days)
       CLOUDTRAIL_IGNORED_EVENTS = ""
