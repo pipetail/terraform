@@ -1,368 +1,66 @@
 # terraform
-This repo is trying to show how we use terraform in [pipetail](https://pipetail.io).
 
-It is for our internal use to reference external terraform modules as well as a "terraform skeleton" to bootstrap new infrastructure.
-We also use it for educational purposes as a reference in our workshops.
+Terraform modules that [pipetail](https://pipetail.io) runs in production, each released and versioned on its own, plus the examples and CI that prove them.
 
-We hope this will also help to anyone out there searching for some terraform "best practices" and inspiration for "public cloud infrastructure codebases".
-
-You might want to check out [10 most common mistakes using terraform](https://blog.pipetail.io/posts/2020-10-29-most-common-mistakes-terraform/).
-
-Any feedback & contributions are welcome!
-
-## repository layout
-For independent terraform states / environments / etc. we use `folder layout` rather than somehow using one folder with `staging.tfvars` and `prod.tfvars` and plenty of `if`s in the configuration.
-
-We prefer boilerplate rather than complexity in this.
-
-Folder layout also makes it easier to use `direnv` with `AWS_PROFILE` credentials and other ENV vars we might need.
-
-## pre-commit
-This repository uses pre-commit framework https://pre-commit.com. Please install
-the framework and install all the hooks by invoking:
-
-```
-pre-commit install
-```
-
-The configuration is directly in [.pre-commit-config.yaml](.pre-commit-config.yaml) file. It mainly ensures the following:
-
-- `terraform_fmt` - terraform code formatting
-- `terraform_docs` - auto-generated module documentation
-- `terraform_validate` - terraform syntax validation
-- `terraform_tflint` - terraform linting with custom rules
-- `terraform_checkov` - security and compliance scanning
-- `shellcheck` / `shfmt` - shell script linting and formatting
-- `packer_fmt` - packer file formatting
-- `check-merge-conflict` - avoids commiting merge-conflicts by mistake
-- `end-of-file-fixer` - convention for end-of-files (empty line at end of every file)
-- `trailing-whitespace` - deletes trailing whitespaces at end of lines
-- `check-yaml` - validates YAML syntax
-- `pretty-format-json` - consistent JSON formatting
-- `detect-private-key` - avoids commiting private keys in git
-- `check-added-large-files` - avoids commiting large files (>4MB) in git
-- `check-case-conflict` - catches filename case conflicts across platforms
-- `check-executables-have-shebangs` / `check-shebang-scripts-are-executable` - script permission sanity
-- `no-commit-to-branch` - prevents accidental direct commits to `master` and `main`
-- `check-github-actions` / `check-github-workflows` - validates GitHub Actions workflow schema
-- `opa-fmt` - OPA/Rego policy file formatting
-- `conftest-verify` - runs unit tests for custom Conftest policies
-- `conftest-terraform` - validates Terraform files against custom OPA policies
-
-It is possible to manually run all checks on all files using
-```
-pre-commit run --all-files
-```
-
-However, pre-commit hooks are going to run automatically every time you try to `git commit`. The hook will run only on the files that changed within the commit itself, not on all files.
-
-## terraform fmt
-Please always run (pre-commit does this for you):
-
-```
-terraform fmt -recursive .
-```
-
-in the root of your repo.
-
-This command rewrites Terraform configuration files to a canonical format and style.
-
-It's prettier. It doesn't trigger your colleagues' OCDs anymore. Just do it. No arguing.
-
-## .terraform.lock.hcl
-We use the [terraform dependency lock file](https://www.terraform.io/language/files/dependency-lock) to track terraform provider dependencies and verify their checksums.
-
-This file is versioned in git and not `.gitignore`d as many people do.
-
-We lock multiple platforms:
-
-```
-terraform providers lock  \
-  -platform=windows_amd64 \
-  -platform=darwin_amd64  \
-  -platform=linux_amd64   \
-  -platform=darwin_arm64  \
-  -platform=linux_arm64
-```
-
-The `terraform-lock.yaml` workflow automatically updates lock files when provider versions change in PRs. It runs `terraform providers lock` for all platforms and commits the updated lock files back to the PR branch.
-
-## renovate
-We use renovate to manage all our dependencies.
-
-Since we prefer pinning our dependencies to certain versions (as opposed to using something like `:latest`, etc.), we still need an "upgrade strategy". Instead of manually checking for newer versions, changelogs and creating PRs to upgrade each of the dependencies, we have this automated.
-That's where renovate comes into play.
-
-Renovate is configured by [`renovate.json`](./renovate.json). Key features of our configuration:
-
-- **GitHub Action digest pinning** for supply chain security
-- **Grouped PRs** - Terraform providers and modules are grouped to reduce PR noise
-- **Automerge** for low-risk updates (provider patch versions, action digest updates)
-- **Custom regex managers** for tracking EKS/Kubernetes versions in Terraform variables
-- **Lock file maintenance** scheduled weekly to keep dependency metadata fresh
-- **Separate major/minor/patch** updates so breaking changes are clearly visible
-
-Renovate scans all files in default branch and looks for dependencies and their versions. It looks through terraform files, Dockerfiles, etc. and when it finds a new version is available for something, it creates a Pull Request with bumping the version, dumps Changelog, etc.
-
-We run all github actions checks to validate, test and `terraform plan` the changes and when it is safe to upgrade, we simply merge the PR.
-
-The `terraform-lock.yaml` workflow automatically updates lock files when Renovate (or any PR) changes provider versions, since Renovate doesn't handle this natively.
-
-## .gitignore
-This `.gitignore` is a template we use in all our git repos where terraform is used.
-
-## GitHub Actions
-There are several GitHub Actions workflows:
-
-- `precommit.yaml` - to check everything with pre-commit in Pull Requests since some people might "forget" to use it :))
-- `terraform-validate.yaml` - to `terraform validate` everything
-- `terraform-plan-*.yaml` - to `terraform plan` all folders in PRs
-- `terraform-apply-*.yaml` - to `terraform apply` all approved plans from PRs (approved == merged PR)
-- `periodic-terraform-apply-*.yaml` - aka "poor man's gitops" to periodically terraform apply what is in the default branch, can be also triggered manually (useful when terraform-apply workflows fail for issues with previous terraform plans, etc.)
-- `terraform-lock.yaml` - automatically updates `.terraform.lock.hcl` files for all platforms when provider versions change in PRs
-- `terraform-state-unlock.yaml` - scheduled workflow (daily 2 AM) that detects and removes stale S3 state locks (>4 hours old), also supports manual unlock via workflow_dispatch
-- `packer-build.yaml` - reusable workflow for building AMIs with Packer
-- `packer-wireguard-04.yaml` - builds WireGuard VPN AMI when Packer files change in example 04
-- `update-bottlerocket-ami.yaml` - weekly check for new Bottlerocket AMI releases, creates a PR to update the pinned version
-- `package-lambdas.yaml` - automatically packages Lambda functions when source code changes in PRs, commits updated zip files back to the branch
-
-All GitHub Actions are pinned to full commit digests (not tags) for supply chain security.
-
-### Packer Builds
-
-The `packer-build.yaml` is a reusable workflow for building custom AMIs with Packer. It provides:
-
-- **OIDC authentication** for secure AWS access
-- **Validation on PRs** - runs `packer validate` to catch errors before merge
-- **Build on merge** - builds the AMI when changes are pushed to master
-- **Bot commit detection** - skips builds triggered by automated commits to prevent loops
-- **Step summary** - outputs the built AMI ID to GitHub Actions summary
-
-Example 04 (WireGuard VPN) uses this pattern via `packer-wireguard-04.yaml`. To add Packer CI for other examples, create a caller workflow that references the reusable workflow with appropriate inputs.
-
-### Bottlerocket AMI Updates
-
-The `update-bottlerocket-ami.yaml` workflow runs weekly (Monday 8 AM UTC) to check for new [Bottlerocket](https://github.com/bottlerocket-os/bottlerocket) AMI releases. It queries the AWS SSM public parameter for the latest AMI ID, compares it against the version pinned in Terraform, and creates a PR with the updated AMI ID when a new version is available. This ensures EKS nodes run on the latest Bottlerocket release with security patches and bug fixes while still going through the standard PR review and terraform plan process.
-
-### Lambda Deployment
-
-Lambda functions live in `src/<lambda-name>/` directories with an `index.mjs` (or `index.js`) entry point.
-
-- **`package-lambdas.yaml`** runs automatically on PRs when Lambda source code changes. It uses `scripts/package-lambdas.sh` to create reproducible zip packages (normalized timestamps, deterministic file ordering) and commits the updated `.zip` files back to the PR branch. If the packaging script itself changes, all Lambdas are repackaged.
-
-## tflint
-[tflint](https://github.com/terraform-linters/tflint) is a pluggable linter for Terraform. We use the `tflint-ruleset-aws` plugin to catch AWS-specific issues (invalid instance types, missing tags, deprecated resources) before they reach `terraform plan`. Configuration is in `.tflint.hcl` files per environment.
-
-## checkov
-[Checkov](https://www.checkov.io) is an amazing tool to lint terraform (and other) resources, we use the non-official pre-commit hook by antonbabenko
-
-## Conftest Policies
-
-We use [Conftest](https://www.conftest.dev/) (built on [OPA/Rego](https://www.openpolicyagent.org/)) to enforce custom rules on Terraform files that can't be caught by tflint or checkov. Policies live in `conftest-policies/`.
-
-**Current policies:**
-
-- **JSON policy enforcement** (`json_policy.rego`) -- Bans `data "aws_iam_policy_document"` data sources and raw JSON heredoc strings in policy fields across all AWS resource types (IAM, S3, SNS, SQS, KMS, ECR, OpenSearch, CloudWatch Logs, etc.). Use `jsonencode()` instead.
-
-- **S3 lifecycle rule prefix validation** (`s3_lifecycle.rego`) -- Prevents placing `prefix` as a top-level key in S3 lifecycle rules instead of inside a `filter` block. The wrong syntax causes the expiration rule to apply to ALL objects in the bucket, not just the intended prefix.
-
-**Running manually:**
-
-```bash
-# Test a specific file
-conftest test --parser hcl2 --policy conftest-policies/ examples/05-aws-complete/storage.tf
-
-# Run policy unit tests
-conftest verify --policy conftest-policies/
-```
-
-**Adding new policies:**
-
-1. Create a `.rego` file in `conftest-policies/` with `deny_` rules
-2. Add tests in a corresponding `_test.rego` file
-3. Run `conftest verify --policy conftest-policies/` to validate
-4. Run `opa fmt -w conftest-policies/` to format
-
-## JSON Policy Standards
-
-Use `jsonencode()` for all AWS policy fields -- not just IAM, but also S3 bucket policies, KMS key policies, SNS/SQS policies, ECR repository policies, OpenSearch access policies, etc. Do NOT use `data "aws_iam_policy_document"` or raw JSON heredoc strings.
-
-This is enforced by `conftest-policies/json_policy.rego` across all examples and modules.
-
-### Preferred (jsonencode)
-
-```hcl
-resource "aws_iam_policy" "example" {
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["s3:GetObject"]
-      Resource = ["arn:aws:s3:::bucket/*"]
-    }]
-  })
-}
-
-resource "aws_s3_bucket_policy" "example" {
-  bucket = aws_s3_bucket.example.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = "*"
-      Action    = ["s3:GetObject"]
-      Resource  = ["${aws_s3_bucket.example.arn}/*"]
-    }]
-  })
-}
-```
-
-### Avoid (data source)
-
-```hcl
-data "aws_iam_policy_document" "example" {
-  statement {
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::bucket/*"]
-  }
-}
-```
-
-### Avoid (raw JSON heredoc)
-
-```hcl
-resource "aws_iam_policy" "example" {
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": ["s3:GetObject"],
-    "Resource": ["arn:aws:s3:::bucket/*"]
-  }]
-}
-EOF
-}
-```
-
-**Rationale**: jsonencode keeps policy definition inline with the resource, is more readable, avoids extra data source lookups, and produces cleaner terraform plan output.
-
-## Managed Databases
-
-Example 05 shows production-grade Aurora PostgreSQL using the community `terraform-aws-modules/rds-aurora/aws` module with KMS encryption, Performance Insights, CloudWatch log exports, 35-day backup retention, and S3 lifecycle tiering. See `examples/05-aws-complete/database.tf`.
-
-## VPC Flow Logs
-
-VPC Flow Logs capture network traffic metadata for security analysis, troubleshooting, and compliance. Example 05 enables flow logs using the VPC module's built-in support, sending logs to CloudWatch Logs with KMS encryption and 90-day retention. See `examples/05-aws-complete/networking.tf`.
-
-## Threat detection is out of scope
-
-These examples cover the *logging* layer — CloudTrail, VPC flow logs, ALB access
-logs, RDS log exports, KMS-encrypted log groups with retention. They deliberately
-do not set up the *detection* layer that consumes it: there is no GuardDuty, AWS
-Config or Security Hub here.
-
-That is a scope decision, not an oversight, because both of the obvious candidates
-price on volume rather than per-account and the right setting depends on the estate:
-GuardDuty bills against CloudTrail, flow log and S3 data event volume, and AWS
-Config bills per configuration item recorded, which gets expensive fast in an
-account with autoscaling churn.
-
-Treat "logs exist" as the floor rather than the goal. Anything derived from these
-examples should add detection separately, sized for the account it runs in.
-
-## State Locking
-We use S3 native locking with `use_lockfile = true` (requires Terraform 1.10+). This eliminates the need for a separate DynamoDB table for state locking.
-
-Example backend configuration:
-```hcl
-terraform {
-  backend "s3" {
-    bucket       = "my-terraform-state"
-    key          = "infrastructure"
-    region       = "eu-west-1"
-    use_lockfile = true
-    encrypt      = true
-  }
-}
-```
-
-The `aws-bootstrap` module still supports creating a DynamoDB table for backwards compatibility via `create_dynamodb_table = true`, but this is no longer the default.
-
-The `terraform-state-unlock.yaml` workflow runs daily to detect and remove stale locks (locks older than 4 hours are considered stale and are automatically removed). Manual unlock is also available via workflow_dispatch for emergency situations.
-
-## State Migrations
-
-We use a dedicated `migrations.tf` file per workspace for all state migrations (`moved {}`, `import {}`, `removed {}` blocks). This replaces manual `terraform state mv` and `terraform import` commands, which are error-prone and not reviewable in PRs.
-
-Benefits:
-- Migrations are **versioned in git** and go through the normal PR review process
-- They are **applied automatically** during `terraform apply` — no manual steps
-- Applied `moved` blocks are harmless no-ops and serve as a **refactoring history**
-- `import` blocks can be removed after they have been applied to all environments
-
-See `examples/05-aws-complete/migrations.tf` for patterns including resource renames, module extractions, `for_each` key changes, and resource type upgrades.
-
-## direnv
-.envrc in every folder using includes + correct AWS_PROFILE
-
-## tfenv
-We use [tfenv](https://github.com/tfutils/tfenv) to manage multiple terraform versions on our local workstations.
-
-## shellcheck
-What kind of infra would be it if it's not sprinkled with some shell scripts?
-
-[Shellcheck](https://www.shellcheck.net) is awesome to lint your scripts. That's why we use it in pre-commit.
-
-
-## terraform-docs
-Since we specify variables descriptions and types, it is easy to generate terraform documentation for all our modules:
-
-```
-terraform-docs  markdown . > README.md
-```
-
-This is useful for some people and takes no effort on our side. We do this manually so far. Automating this and having this in pre-commit would be far better.
-I'm writing this here as a TODO.
+Pin a module by its release tag. Modules carry `terraform test` suites under `tests/`, and most examples are applied to a real account every week.
 
 ## Modules
 
-Reusable Terraform modules in `modules/`:
+| Module | What it creates | Latest | Example |
+|---|---|---|---|
+| [`aws-bootstrap`](modules/aws-bootstrap) | S3 state bucket with access logging, optional DynamoDB lock table | `aws-bootstrap-v1.0.0` | [06](examples/06-minimal-aws-terraform-bootstrap) |
+| [`aws-events-to-slack`](modules/aws-events-to-slack) | Lambda that forwards AWS Health, maintenance, budget and security events to Slack | `aws-events-to-slack-v1.8.2` | [05](examples/05-aws-complete) |
+| [`certificate`](modules/certificate) | ACM certificate with DNS validation, plus a us-east-1 copy for CloudFront | `certificate-v1.0.0` | [05](examples/05-aws-complete) |
+| [`cloudtrail`](modules/cloudtrail) | Multi-region CloudTrail to an encrypted S3 bucket and CloudWatch Logs | `cloudtrail-v1.0.0` | none yet |
+| [`cluster-autoscaler`](modules/cluster-autoscaler) | Cluster Autoscaler Helm release with an IRSA role | `cluster-autoscaler-v1.0.0` | none yet |
+| [`eks`](modules/eks) | EKS cluster with Bottlerocket node groups, access entries and KMS secrets encryption | `eks-v1.0.0` | [05](examples/05-aws-complete) |
+| [`github-oidc`](modules/github-oidc) | GitHub Actions OIDC provider and a role trusted only by named subjects | `github-oidc-v1.0.0` | [03](examples/03-aws-github-actions-oidc) |
+| [`kms`](modules/kms) | Shared KMS key with rotation and scoped grants for CloudWatch Logs and CloudTrail | `kms-v1.0.0` | none yet |
+| [`pipetail-cloud-health-ingest`](modules/pipetail-cloud-health-ingest) | EventBridge rule that sends AWS Health events to pipetail.cloud | `pipetail-cloud-health-ingest-v1.0.2` | none |
+| [`pipetail-cloud-role`](modules/pipetail-cloud-role) | Read-only cross-account role for pipetail.cloud, trusted with an external id | `pipetail-cloud-role-v2.2.0` | none |
+| [`wireguard-ec2`](modules/wireguard-ec2) | WireGuard VPN host on EC2 from a Packer-built AMI | `wireguard-ec2-v1.0.1` | [04](examples/04-aws-wireguard-vpn) |
 
-| Module | Description |
-|--------|-------------|
-| `aws-bootstrap` | S3 backend + optional DynamoDB table for state management |
-| `certificate` | ACM certificate with DNS validation |
-| `cloudtrail` | Multi-region CloudTrail with S3 storage, CloudWatch Logs, KMS encryption, and lifecycle rules |
-| `cluster-autoscaler` | Kubernetes Cluster Autoscaler with IRSA |
-| `eks` | EKS cluster with managed/self-managed node groups |
-| `github-oidc` | GitHub Actions OIDC provider + IAM role |
-| `kms` | Shared KMS key with key rotation, CloudWatch Logs and CloudTrail encryption |
-| `wireguard-ec2` | WireGuard VPN on EC2 with Packer AMI |
+The "Latest" column is a snapshot. The [releases page](https://github.com/pipetail/terraform/releases) is always current.
 
-### Versioning
+## Using a module
 
-Each module is released on its own, as `<module>-vX.Y.Z`. Pin that tag:
+Pin the module's own release tag:
 
 ```hcl
 module "github_oidc" {
   source = "github.com/pipetail/terraform//modules/github-oidc?ref=github-oidc-v1.0.0"
+
+  repository_name = "example-org/example-repo"
 }
 ```
 
-`module-release.yaml` cuts the release when a change to the module lands on `master`. The bump comes from the squash-merged PR title: `fix(<module>):` is a patch, `feat(<module>):` a minor, and `!` or a `BREAKING CHANGE:` footer a major. `pr-title.yaml` rejects a PR whose title scope does not match the one module it changes. Changes that touch only `.md` files or a module's `tests/` directory are not released.
+Each module is released as `<module>-vX.Y.Z` when a change to it lands on `master`. The version bump comes from the squash-merged PR title: `fix(<module>):` is a patch, `feat(<module>):` a minor, and `!` or a `BREAKING CHANGE:` footer a major. A PR whose title scope does not match the one module it changes fails CI. Changes to a module's `.md` files or `tests/` directory are not released.
 
 `aws-events-to-slack`, `pipetail-cloud-role` and `pipetail-cloud-health-ingest` keep their own release workflows. The repo-wide `v0.0.x` tags are no longer cut.
 
-## naming conventions
-Basically just [this](https://www.terraform-best-practices.com/naming)
+## Examples
 
-- `snake_case` in terraform resource names (no convention for cloud resources names, often we use `camel-case`)
-- don't repeat resource types in names, `resource "aws_route_table" "public_route_table"` is ugly and long
+Each example is its own Terraform root with its own state. PRs get a `terraform plan` for every example they affect. A merge applies it, except for example 05, which is plan-only.
 
-these are (partially) enforced by `tflint`.
+| Example | What it shows | Proven by |
+|---|---|---|
+| [01-minimal-aws-cloudformation-bootstrap](examples/01-minimal-aws-cloudformation-bootstrap) | State backend created with CloudFormation. Legacy: prefer 06. | weekly apply |
+| [02-minimal-gcp-tf-bootstrap](examples/02-minimal-gcp-tf-bootstrap) | GCP state bucket and the project services it needs | weekly apply |
+| [03-aws-github-actions-oidc](examples/03-aws-github-actions-oidc) | CI role for GitHub Actions without static keys | weekly apply |
+| [04-aws-wireguard-vpn](examples/04-aws-wireguard-vpn) | VPN host from a Packer AMI built in CI | weekly apply |
+| [05-aws-complete](examples/05-aws-complete) | A full account: EKS, Aurora, ElastiCache, ALB, CloudTrail, flow logs, budgets | plan on every PR |
+| [06-minimal-aws-terraform-bootstrap](examples/06-minimal-aws-terraform-bootstrap) | State backend created with Terraform and the `aws-bootstrap` module | weekly apply, then destroy |
 
-## contributions
-special thanks to
-- [@vranystepan](https://github.com/vranystepan)
-- [@vdovhanych](https://github.com/vdovhanych)
+## How changes are checked
+
+- [docs/ci.md](docs/ci.md): the workflows, pre-commit hooks, lock files and Renovate.
+- [docs/policies.md](docs/policies.md): the custom conftest policies, tflint and checkov.
+- [docs/conventions.md](docs/conventions.md): repository layout, state locking, state migrations and naming.
+
+## Contributing
+
+Install the hooks once with `pre-commit install`. They run on the files each commit changes. CI runs the same hooks on every PR, plus the policy checks on the whole tree and every module's `terraform test` suite.
+
+PR titles follow [Conventional Commits](https://www.conventionalcommits.org) and name the module they change as the scope.
+
+Thanks to [@vranystepan](https://github.com/vranystepan) and [@vdovhanych](https://github.com/vdovhanych).
