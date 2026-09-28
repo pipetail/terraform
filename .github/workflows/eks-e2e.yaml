@@ -66,6 +66,15 @@ jobs:
           kubectl wait --for=condition=Ready nodes --all --timeout=10m
           kubectl get nodes -o wide
 
+      # The CI role caps sessions at 1h, which apply plus the node wait can use up.
+      - name: Refresh AWS credentials for destroy
+        if: always() && steps.init.outcome == 'success'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+          role-session-name: GithubActionsEksE2eDestroy
+          aws-region: eu-west-1
+
       # A step that hits its timeout is killed without releasing the S3 state
       # lock, so destroy has to ignore it. Safe only because the eks-e2e
       # concurrency group lets one run use this state key at a time.
