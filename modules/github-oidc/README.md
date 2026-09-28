@@ -67,5 +67,5 @@ No modules.
 |------|-------------|
 | <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | OIDC Provider ARN |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | Github Actions IAM Role ARN |
-| <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Github Actions IAM Role ARN |
+| <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Github Actions IAM Role name |
 <!-- END_TF_DOCS -->
