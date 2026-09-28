@@ -59,7 +59,7 @@ repos:
         args: ["-l", "-i", "2", "-ci", "-sr", "-w"]
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.36.1
+    rev: 0.38.2
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
