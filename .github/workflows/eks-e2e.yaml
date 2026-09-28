@@ -65,6 +65,32 @@ jobs:
           done
           kubectl wait --for=condition=Ready nodes --all --timeout=10m
           kubectl get nodes -o wide
+      # cluster_name is missing from state when apply fails before the
+      # cluster exists; the cluster is named after name_prefix.
+      - name: Print node group health
+        if: ${{ failure() && !inputs.destroy_only }}
+        run: |
+          cluster="$(terraform -chdir="$EXAMPLE" output -raw cluster_name 2>/dev/null || true)"
+          if [ -z "$cluster" ]; then
+            cluster="$(sed -n 's/^name_prefix *= *"\(.*\)".*/\1/p' "$EXAMPLE/terraform.tfvars" || true)"
+          fi
+          echo "cluster: $cluster"
+          nodegroups="$(aws eks list-nodegroups --cluster-name "$cluster" --query 'nodegroups[]' --output text || true)"
+          echo "node groups: $nodegroups"
+          for ng in $nodegroups; do
+            echo "::group::node group $ng"
+            aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "$ng" \
+              --query 'nodegroup.{status:status,health:health}' || true
+            echo "::endgroup::"
+          done
+          instances="$(aws ec2 describe-instances \
+            --filters "Name=tag:eks:cluster-name,Values=$cluster" \
+            --query 'Reservations[].Instances[].InstanceId' --output text || true)"
+          for id in $instances; do
+            echo "::group::console output of $id"
+            aws ec2 get-console-output --instance-id "$id" --latest --query Output --output text | tail -n 100 || true
+            echo "::endgroup::"
+          done
 
       # The CI role caps sessions at 1h, which apply plus the node wait can use up.
       - name: Refresh AWS credentials for destroy
