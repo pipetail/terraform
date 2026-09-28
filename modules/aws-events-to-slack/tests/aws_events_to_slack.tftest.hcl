@@ -121,6 +121,11 @@ run "deploys_the_pinned_release_package" {
   }
 
   assert {
+    condition     = aws_lambda_function.this.environment[0].variables.AWS_ACCOUNT_ID == "123456789012"
+    error_message = "AWS_ACCOUNT_ID must be the deploying account. The Lambda runtime does not set it, and notifications without an account id in the payload show \"Unknown\"."
+  }
+
+  assert {
     condition     = aws_lambda_function.this.tags.ModuleVersion == "1.2.3" && aws_lambda_function.this.tags.FeatureGlobal == "true"
     error_message = "The marker tags the portal reads must report the deployed version and enabled features."
   }
