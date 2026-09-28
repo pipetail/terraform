@@ -4,8 +4,8 @@ Requests an ACM certificate for `domain_name` and any `subject_alternative_names
 validation, writes the validation records into a Route 53 hosted zone, and waits until the
 certificate is issued. It requests the same certificate a second time through the `aws.virginia`
 provider, which must point at us-east-1, for services such as CloudFront that only accept
-certificates from that Region. Only the main certificate is waited on, so
-`virginia_certificate_arn` can refer to a certificate that is still pending validation.
+certificates from that Region. ACM gives both copies the same validation records, so the module
+waits on the us-east-1 copy as well, and `virginia_certificate_arn` is known only once it is issued.
 
 ## Usage
 
@@ -54,6 +54,7 @@ No modules.
 | [aws_acm_certificate.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate) | resource |
 | [aws_acm_certificate.virginia](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate) | resource |
 | [aws_acm_certificate_validation.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation) | resource |
+| [aws_acm_certificate_validation.virginia](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation) | resource |
 | [aws_route53_record.validation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
 
 ## Inputs
@@ -70,5 +71,5 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_certificate_arn"></a> [certificate\_arn](#output\_certificate\_arn) | ACM certificate ARN |
-| <a name="output_virginia_certificate_arn"></a> [virginia\_certificate\_arn](#output\_virginia\_certificate\_arn) | ACM certificate ARN |
+| <a name="output_virginia_certificate_arn"></a> [virginia\_certificate\_arn](#output\_virginia\_certificate\_arn) | ARN of the us-east-1 copy of the ACM certificate, for CloudFront |
 <!-- END_TF_DOCS -->

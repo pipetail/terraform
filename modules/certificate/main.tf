@@ -55,3 +55,11 @@ resource "aws_acm_certificate_validation" "main" {
   certificate_arn         = aws_acm_certificate.main.arn
   validation_record_fqdns = [for record in aws_route53_record.validation : record.fqdn]
 }
+
+# ACM issues the same validation CNAME for a domain in every region of an
+# account, so the records created for the regional certificate validate this one.
+resource "aws_acm_certificate_validation" "virginia" {
+  provider                = aws.virginia
+  certificate_arn         = aws_acm_certificate.virginia.arn
+  validation_record_fqdns = [for record in aws_route53_record.validation : record.fqdn]
+}
