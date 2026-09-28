@@ -47,11 +47,12 @@ run "trusts_only_the_autoscaler_service_account" {
 
   assert {
     condition = jsondecode(aws_iam_role.this.assume_role_policy).Statement[0].Condition == {
-      StringLike = {
+      StringEquals = {
         "oidc.eks.eu-central-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub" = "system:serviceaccount:cluster-autoscaler:cluster-autoscaler-aws-cluster-autoscaler"
+        "oidc.eks.eu-central-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:aud" = "sts.amazonaws.com"
       }
     }
-    error_message = "The trust policy must pin the sub claim to the service account the chart creates, and nothing else."
+    error_message = "The trust policy must match the sub claim exactly against the service account the chart creates, require the sts.amazonaws.com audience, and nothing else."
   }
 }
 
@@ -64,7 +65,7 @@ run "sub_condition_follows_release_name_and_namespace" {
   }
 
   assert {
-    condition     = jsondecode(aws_iam_role.this.assume_role_policy).Statement[0].Condition.StringLike["oidc.eks.eu-central-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub"] == "system:serviceaccount:kube-system:ca-aws-cluster-autoscaler"
+    condition     = jsondecode(aws_iam_role.this.assume_role_policy).Statement[0].Condition.StringEquals["oidc.eks.eu-central-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub"] == "system:serviceaccount:kube-system:ca-aws-cluster-autoscaler"
     error_message = "The chart names its service account <release>-aws-cluster-autoscaler in the release namespace, so the sub condition must follow both."
   }
 }
