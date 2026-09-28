@@ -75,15 +75,75 @@ jobs:
         run: terraform -chdir="$EXAMPLE" destroy -input=false -auto-approve -lock=false
 
       # KMS keys stay listed while pending deletion, which is expected.
+      # The tagging API keeps listing other resources for a while after they
+      # are deleted, so each ARN it returns is confirmed with a describe call.
       - name: Check for leftovers
         if: always() && steps.init.outcome == 'success'
         run: |
           set -euo pipefail
-          leftovers() {
+          candidates() {
             aws resourcegroupstaggingapi get-resources \
               --tag-filters Key=example,Values=07-aws-eks \
               --query 'ResourceTagMappingList[].ResourceARN' --output text \
-              | tr '\t' '\n' | grep -v ':kms:' || true
+              | tr '\t' '\n' | grep -v -e ':kms:' -e '^$' || true
+          }
+          # A NAT gateway prints its state, which still_exists checks for deleted.
+          describe() {
+            local service="$1" resource="$2" id="${2#*/}"
+            case "$service:$resource" in
+              ec2:natgateway/*)
+                aws ec2 describe-nat-gateways --nat-gateway-ids "$id" --query 'NatGateways[0].State' --output text ;;
+              ec2:subnet/*) aws ec2 describe-subnets --subnet-ids "$id" ;;
+              ec2:security-group/*) aws ec2 describe-security-groups --group-ids "$id" ;;
+              ec2:vpc/*) aws ec2 describe-vpcs --vpc-ids "$id" ;;
+              ec2:route-table/*) aws ec2 describe-route-tables --route-table-ids "$id" ;;
+              ec2:network-acl/*) aws ec2 describe-network-acls --network-acl-ids "$id" ;;
+              ec2:internet-gateway/*) aws ec2 describe-internet-gateways --internet-gateway-ids "$id" ;;
+              ec2:elastic-ip/*) aws ec2 describe-addresses --allocation-ids "$id" ;;
+              eks:cluster/*) aws eks describe-cluster --name "$id" ;;
+              eks:nodegroup/*/*/*)
+                local cluster="${id%%/*}" nodegroup="${id#*/}"
+                aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${nodegroup%%/*}" ;;
+              logs:log-group:*)
+                local name="${resource#log-group:}" groups
+                name="${name%:\*}"
+                groups="$(aws logs describe-log-groups --log-group-name-prefix "$name" \
+                  --query 'logGroups[].logGroupName' --output text)" || return 1
+                if ! tr '\t' '\n' <<< "$groups" | grep -Fxq -- "$name"; then
+                  echo "log group NotFound"
+                  return 1
+                fi
+                echo "$name" ;;
+              *)
+                echo "no describe call for this ARN type" >&2
+                return 1 ;;
+            esac
+          }
+          # Unknown ARN types and describe errors other than NotFound count
+          # as existing, so the check fails rather than miss a leftover.
+          still_exists() {
+            local arn="$1" service resource out
+            service="$(cut -d: -f3 <<< "$arn")"
+            resource="$(cut -d: -f6- <<< "$arn")"
+            if ! out="$(describe "$service" "$resource" 2>&1 < /dev/null)"; then
+              case "$out" in
+                *NotFound*) return 1 ;;
+              esac
+              echo "$arn: $out" >&2
+              return 0
+            fi
+            case "$out" in
+              deleted | deleting) return 1 ;;
+              *) return 0 ;;
+            esac
+          }
+          leftovers() {
+            local arn
+            candidates | while IFS= read -r arn; do
+              if still_exists "$arn"; then
+                echo "$arn"
+              fi
+            done
           }
           left="$(leftovers)"
           if [ -n "$left" ]; then
