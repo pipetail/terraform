@@ -14,6 +14,7 @@ on:
       - "**/versions.tf"
       - "**/.terraform.lock.hcl"
       - "renovate.json"
+      - ".github/workflows/terraform-lock.yaml"
 
 jobs:
   terraform-lock:
@@ -32,16 +33,19 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Update lock files
+      - name: Regenerate lock files at their locked versions
         run: |
           LOCK_PLATFORMS="-platform=windows_amd64 -platform=darwin_amd64 -platform=linux_amd64 -platform=darwin_arm64 -platform=linux_arm64"
 
           # Find all directories containing .terraform.lock.hcl
           for lockfile in $(find . -name ".terraform.lock.hcl" -type f | sort); do
             dir=$(dirname "$lockfile")
-            echo "Updating lock file in $dir"
+            echo "Checking lock file in $dir"
             cd "$dir"
-            terraform init -backend=false -upgrade
+            # No -upgrade: it re-resolves to the newest release, so every lock
+            # file would fail here the day a provider ships a new version.
+            # init still fails if a locked version no longer satisfies versions.tf.
+            terraform init -backend=false
             terraform providers lock $LOCK_PLATFORMS
             cd - > /dev/null
           done
@@ -50,6 +54,6 @@ jobs:
         run: |
           if ! git diff --quiet -- '**/.terraform.lock.hcl'; then
             git diff -- '**/.terraform.lock.hcl'
-            echo "::error::Terraform lock files are stale. Regenerate them for all five required platforms and commit the changes."
+            echo "::error::Terraform lock files are missing hashes for one of the five required platforms. Regenerate them with terraform providers lock for all five platforms and commit the changes."
             exit 1
           fi
