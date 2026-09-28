@@ -15,9 +15,9 @@ resource "aws_iam_role" "this" {
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
-
-          StringLike = {
+          StringEquals = {
             "${local.cluster_oidc_issuer}:sub" = "system:serviceaccount:${var.namespace}:${var.name}-aws-cluster-autoscaler"
+            "${local.cluster_oidc_issuer}:aud" = "sts.amazonaws.com"
           }
         }
       }
