@@ -115,6 +115,11 @@ run "delivery_role_may_only_write_to_the_trail_log_group" {
   command = apply
 
   assert {
+    condition     = aws_iam_role.cloudtrail.name == "cloudtrail-cloudwatch"
+    error_message = "Without an override the delivery role must keep its existing name, or existing trails replace the role."
+  }
+
+  assert {
     condition     = jsondecode(aws_iam_role.cloudtrail.assume_role_policy).Statement[0].Principal == { Service = "cloudtrail.amazonaws.com" }
     error_message = "Only CloudTrail may assume the log delivery role."
   }
@@ -125,6 +130,24 @@ run "delivery_role_may_only_write_to_the_trail_log_group" {
       ["logs:PutLogEvents", "arn:aws:logs:eu-west-1:123456789012:log-group:example-cloudtrail-logs:*"],
     ]
     error_message = "The delivery role may only create streams in and write events to the trail log group."
+  }
+}
+
+run "delivery_role_name_can_be_set_per_instance" {
+  command = apply
+
+  variables {
+    cloudwatch_role_name = "example-cloudtrail-cloudwatch"
+  }
+
+  assert {
+    condition     = aws_iam_role.cloudtrail.name == "example-cloudtrail-cloudwatch"
+    error_message = "IAM role names are unique per account, so a second trail in the account needs its own delivery role name."
+  }
+
+  assert {
+    condition     = aws_iam_role_policy.cloudtrail_cloudwatch.role == aws_iam_role.cloudtrail.id
+    error_message = "The delivery policy must stay attached to the renamed role."
   }
 }
 
