@@ -5,7 +5,7 @@ module "aws_events_to_slack" {
   source = "../../modules/aws-events-to-slack"
 
   # renovate: datasource=github-releases depName=pipetail/terraform extractVersion=^aws-events-to-slack-v(?<version>.+)$
-  lambda_version           = "1.0.0"
+  lambda_version           = "1.8.2"
   account_name             = var.name_prefix
   regions                  = var.region
   slack_channel            = var.slack_channel
