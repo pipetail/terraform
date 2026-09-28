@@ -92,6 +92,8 @@ module "eks" {
 
       capacity_type = v.capacity_type
 
+      timeouts = var.node_group_timeouts
+
       labels = {
         nodepool = v.name
       }

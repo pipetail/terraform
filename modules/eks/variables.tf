@@ -90,3 +90,20 @@ variable "endpoint_public_access_cidrs" {
   default     = null
   description = "CIDRs allowed to reach the public Kubernetes API endpoint. Leave null to inherit the upstream default of 0.0.0.0/0. Set this to the egress addresses that actually need API access — anything running Terraform or kubectl against the cluster must be covered, including CI."
 }
+
+variable "node_group_timeouts" {
+  type = object({
+    create = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = null
+  description = "Create, update and delete timeouts for every managed node group, e.g. { create = \"15m\" }. Null keeps the provider defaults. A short create timeout makes a node group whose nodes never join fail fast instead of blocking the apply."
+
+  validation {
+    condition = var.node_group_timeouts == null ? true : alltrue([
+      for t in values(var.node_group_timeouts) : t == null || can(regex("^[0-9]+(s|m|h)$", t))
+    ])
+    error_message = "node_group_timeouts values must be durations like \"30s\", \"15m\" or \"1h\"."
+  }
+}

@@ -122,6 +122,24 @@ run "rejects_a_worker_ami_id_that_is_not_an_ami" {
   expect_failures = [var.worker_ami_id]
 }
 
+run "rejects_a_node_group_timeout_that_is_not_a_duration" {
+  command = plan
+
+  variables {
+    node_group_timeouts = { create = "fifteen minutes" }
+  }
+
+  expect_failures = [var.node_group_timeouts]
+}
+
+run "accepts_a_node_group_create_timeout" {
+  command = plan
+
+  variables {
+    node_group_timeouts = { create = "15m" }
+  }
+}
+
 run "encrypts_secrets_with_the_provided_kms_key" {
   command = apply
 

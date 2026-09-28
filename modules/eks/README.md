@@ -88,6 +88,7 @@ ALB with an administrator access entry.
 | <a name="input_k8s_version"></a> [k8s\_version](#input\_k8s\_version) | EKS / Kubernetes version | `string` | `"1.36"` | no |
 | <a name="input_kms_key_administrators"></a> [kms\_key\_administrators](#input\_kms\_key\_administrators) | KMS key administrators | `list(string)` | `[]` | no |
 | <a name="input_name"></a> [name](#input\_name) | EKS cluster name | `string` | n/a | yes |
+| <a name="input_node_group_timeouts"></a> [node\_group\_timeouts](#input\_node\_group\_timeouts) | Create, update and delete timeouts for every managed node group, e.g. { create = "15m" }. Null keeps the provider defaults. A short create timeout makes a node group whose nodes never join fail fast instead of blocking the apply. | <pre>object({<br/>    create = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_secrets_encryption_kms_key_arn"></a> [secrets\_encryption\_kms\_key\_arn](#input\_secrets\_encryption\_kms\_key\_arn) | KMS Key ARN for k8s secrets encryption | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of VPC where EKS cluster should belong to | `string` | n/a | yes |
 | <a name="input_worker_ami_id"></a> [worker\_ami\_id](#input\_worker\_ami\_id) | Bottlerocket AMI ID to use for the k8s worker nodes, must match k8s\_version and k8s\_architecture | `string` | n/a | yes |
