@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: "0 5 * * 1"
   workflow_dispatch:
+    inputs:
+      destroy_only:
+        description: Skip apply and the node check, only destroy what an earlier run left behind
+        type: boolean
+        default: false
 
 concurrency:
   group: eks-e2e
@@ -45,10 +50,12 @@ jobs:
       # Step timeouts, not a job timeout: a job timeout would also cut off
       # the destroy below and leave a cluster running.
       - name: terraform apply
+        if: ${{ !inputs.destroy_only }}
         timeout-minutes: 40
         run: terraform -chdir="$EXAMPLE" apply -input=false -auto-approve
 
       - name: Wait for Ready nodes
+        if: ${{ !inputs.destroy_only }}
         timeout-minutes: 15
         run: |
           set -euo pipefail
@@ -59,10 +66,13 @@ jobs:
           kubectl wait --for=condition=Ready nodes --all --timeout=10m
           kubectl get nodes -o wide
 
+      # A step that hits its timeout is killed without releasing the S3 state
+      # lock, so destroy has to ignore it. Safe only because the eks-e2e
+      # concurrency group lets one run use this state key at a time.
       - name: terraform destroy
         if: always() && steps.init.outcome == 'success'
         timeout-minutes: 40
-        run: terraform -chdir="$EXAMPLE" destroy -input=false -auto-approve
+        run: terraform -chdir="$EXAMPLE" destroy -input=false -auto-approve -lock=false
 
       # KMS keys stay listed while pending deletion, which is expected.
       - name: Check for leftovers
