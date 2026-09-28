@@ -1,7 +1,7 @@
 module "vpc" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.16.0"
+  version = "6.7.3"
 
   name = "${var.name_prefix}-main-vpc"
   cidr = var.vpc_cidr
