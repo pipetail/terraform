@@ -56,10 +56,10 @@ export async function handleHealthEvent(event) {
   const summary = `:hospital: AWS Health: ${service} - ${eventTypeCode}`;
 
   await postToSlack({
-    text: summary,
     attachments: [
       {
         color,
+        fallback: summary,
         blocks: [
           {
             type: "section",

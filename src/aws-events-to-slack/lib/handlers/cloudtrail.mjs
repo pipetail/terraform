@@ -73,10 +73,10 @@ async function handleApiCall(event, detail) {
   const summary = `:shield: CloudTrail: ${eventName} by ${who}`;
 
   await postToSlack({
-    text: summary,
     attachments: [
       {
         color,
+        fallback: summary,
         blocks: [
           {
             type: "section",
@@ -129,10 +129,10 @@ async function handleConsoleLogin(event, detail) {
   const summary = `${reason} — ${who}`;
 
   await postToSlack({
-    text: summary,
     attachments: [
       {
         color,
+        fallback: summary,
         blocks: [
           {
             type: "section",
