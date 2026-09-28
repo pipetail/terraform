@@ -34,11 +34,17 @@ module "eks" {
         delete = "10m"
       }
     }
+    // The upstream module creates clusters without the self-managed
+    // aws-node and kube-proxy, and creates other addons only after the node
+    // groups. Without before_compute, nodes wait for a CNI that is never
+    // installed and the node group fails with NodeCreationFailure.
     kube-proxy = {
-      addon_version = data.aws_eks_addon_version.kube_proxy.version
+      addon_version  = data.aws_eks_addon_version.kube_proxy.version
+      before_compute = true
     }
     vpc-cni = {
-      addon_version = data.aws_eks_addon_version.vpc_cni.version
+      addon_version  = data.aws_eks_addon_version.vpc_cni.version
+      before_compute = true
       #service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
     // aws-ebs-csi-driver is deliberately not here — see aws_eks_addon.ebs_csi
