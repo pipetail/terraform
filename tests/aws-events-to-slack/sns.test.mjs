@@ -127,10 +127,10 @@ describe("CloudWatch alarm notifications", () => {
     });
 
     assert.deepEqual(message, {
-      text: ":rotating_light: CloudWatch Alarm: example-heartbeat in ALARM",
       attachments: [
         {
           color: "danger",
+          fallback: ":rotating_light: CloudWatch Alarm: example-heartbeat in ALARM",
           blocks: [
             {
               type: "header",
@@ -170,7 +170,7 @@ describe("CloudWatch alarm notifications", () => {
     assert.equal(forward.evt, "slack_forward");
     assert.equal(forward.category, "ops");
     assert.equal(forward.severity, "high");
-    assert.equal(forward.title, message.text);
+    assert.equal(forward.title, message.attachments[0].fallback);
     assert.match(forward.body, /^example-heartbeat OK -> ALARM in eu-west-1 at 2026-09-25T10:05:00\.000\+0000: Threshold Crossed/);
   });
 
@@ -184,7 +184,7 @@ describe("CloudWatch alarm notifications", () => {
     );
 
     assert.equal(message.attachments[0].color, "good");
-    assert.equal(message.text, ":white_check_mark: CloudWatch Alarm: example-heartbeat recovered (OK)");
+    assert.equal(message.attachments[0].fallback, ":white_check_mark: CloudWatch Alarm: example-heartbeat recovered (OK)");
     assert.equal(header(message), ":white_check_mark: example-heartbeat recovered (OK)");
     assert.ok(JSON.stringify(message).includes("*State:*\\nALARM → OK"));
     assert.equal(hasThresholdsLink(message), false);
@@ -232,10 +232,10 @@ describe("unrecognised SNS messages", () => {
     const { message, forward } = await send({ foo: "bar" }, { subject: "Something happened" });
 
     assert.deepEqual(message, {
-      text: ":bell: AWS Notification",
       attachments: [
         {
           color: "#9E9E9E",
+          fallback: ":bell: AWS Notification",
           blocks: [
             {
               type: "header",
@@ -297,10 +297,10 @@ describe("budget and anomaly notifications", () => {
     assert.deepEqual(message, {
       username: "AWS Budget Alerts",
       icon_emoji: ":money_with_wings:",
-      text: ":moneybag: Budget Alert: example-monthly",
       attachments: [
         {
           color: "#ECB22E",
+          fallback: ":moneybag: Budget Alert: example-monthly",
           blocks: [
             {
               type: "header",
@@ -348,10 +348,10 @@ describe("budget and anomaly notifications", () => {
     assert.deepEqual(message, {
       username: "AWS Budget Alerts",
       icon_emoji: ":money_with_wings:",
-      text: ":chart_with_upwards_trend: Cost Anomaly: example-monitor - Impact: $42.50",
       attachments: [
         {
           color: "#E01E5A",
+          fallback: ":chart_with_upwards_trend: Cost Anomaly: example-monitor - Impact: $42.50",
           blocks: [
             {
               type: "header",

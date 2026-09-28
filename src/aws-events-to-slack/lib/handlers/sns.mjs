@@ -55,7 +55,7 @@ export async function handleSnsEvent(event) {
     logSlackForward({
       category: "database",
       severity: severityFromColor(message.attachments?.[0]?.color),
-      title: message.text,
+      title: message.attachments?.[0]?.fallback,
       body: rdsLogBody(snsMessage),
     });
     return { statusCode: 200, body: "OK" };
@@ -67,7 +67,7 @@ export async function handleSnsEvent(event) {
     logSlackForward({
       category: alarmCategory(snsRecord.TopicArn),
       severity: severityFromColor(message.attachments?.[0]?.color),
-      title: message.text,
+      title: message.attachments?.[0]?.fallback,
       body: alarmLogBody(snsMessage),
     });
     return { statusCode: 200, body: "OK" };
@@ -78,7 +78,7 @@ export async function handleSnsEvent(event) {
   logSlackForward({
     category: snsCategory(snsRecord.TopicArn),
     severity: severityFromColor(message.attachments?.[0]?.color),
-    title: message.text,
+    title: message.attachments?.[0]?.fallback,
     body: budgetLogBody(snsMessage, snsSubject, rawText),
   });
   return { statusCode: 200, body: "OK" };
@@ -196,10 +196,10 @@ function formatBudgetMessage(data, subject, rawText) {
       : JSON.stringify(data, null, 2);
 
   return {
-    text: title,
     attachments: [
       {
         color: NEUTRAL_COLOR,
+        fallback: title,
         blocks: [
           {
             type: "header",
@@ -290,10 +290,10 @@ function formatBudgetAlert(data) {
   return {
     username: "AWS Budget Alerts",
     icon_emoji: ":money_with_wings:",
-    text: `:moneybag: Budget Alert: ${budgetName}`,
     attachments: [
       {
         color: getBudgetColor(data),
+        fallback: `:moneybag: Budget Alert: ${budgetName}`,
         blocks,
       },
     ],
@@ -370,10 +370,10 @@ function formatAnomalyAlert(data) {
   return {
     username: "AWS Budget Alerts",
     icon_emoji: ":money_with_wings:",
-    text: `:chart_with_upwards_trend: Cost Anomaly: ${monitorName} - Impact: ${totalImpact}`,
     attachments: [
       {
         color: "#E01E5A",
+        fallback: `:chart_with_upwards_trend: Cost Anomaly: ${monitorName} - Impact: ${totalImpact}`,
         blocks,
       },
     ],
@@ -432,10 +432,10 @@ function formatCloudWatchAlarm(alarm) {
   );
 
   return {
-    text: `${state.emoji} CloudWatch Alarm: ${alarmName} ${state.phrase}`,
     attachments: [
       {
         color: state.color,
+        fallback: `${state.emoji} CloudWatch Alarm: ${alarmName} ${state.phrase}`,
         blocks,
       },
     ],
@@ -541,10 +541,10 @@ function formatRdsAlert(rdsEvent) {
   ];
 
   return {
-    text: `${category.emoji} RDS Event: ${eventMessage}`,
     attachments: [
       {
         color: category.color,
+        fallback: `${category.emoji} RDS Event: ${eventMessage}`,
         blocks,
       },
     ],

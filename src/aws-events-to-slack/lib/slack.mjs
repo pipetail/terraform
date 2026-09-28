@@ -117,6 +117,10 @@ function postViaWebhook(message) {
   });
 }
 
+// Slack renders a message's own `text` above its attachment, so a card that
+// sets both shows its title twice. Cards put the summary in the attachment's
+// `fallback`, which Slack uses for the notification preview and for clients
+// that cannot render blocks.
 export function postToSlack(message) {
   const capped = capMessage(message);
 
