@@ -42,6 +42,12 @@ mock_provider "aws" {
       arn = "arn:aws:acm:us-east-1:123456789012:certificate/66666666-7777-8888-9999-000000000000"
     }
   }
+
+  mock_resource "aws_acm_certificate_validation" {
+    defaults = {
+      region = "us-east-1"
+    }
+  }
 }
 
 variables {
@@ -119,5 +125,27 @@ run "validates_the_regional_certificate_against_every_record" {
   assert {
     condition     = aws_acm_certificate_validation.main.certificate_arn == aws_acm_certificate.main.arn && output.certificate_arn == aws_acm_certificate.main.arn
     error_message = "The validation resource and the certificate_arn output must refer to the regional certificate."
+  }
+}
+
+run "virginia_certificate_arn_waits_for_issuance" {
+  command = apply
+
+  assert {
+    condition = (
+      aws_acm_certificate_validation.virginia.certificate_arn == aws_acm_certificate.virginia.arn &&
+      aws_acm_certificate_validation.virginia.region == "us-east-1"
+    )
+    error_message = "The us-east-1 certificate must have its own validation resource, created through the aws.virginia provider."
+  }
+
+  assert {
+    condition     = toset(aws_acm_certificate_validation.virginia.validation_record_fqdns) == toset([for r in aws_route53_record.validation : r.fqdn])
+    error_message = "The us-east-1 validation must wait on every validation record."
+  }
+
+  assert {
+    condition     = output.virginia_certificate_arn == aws_acm_certificate_validation.virginia.certificate_arn
+    error_message = "virginia_certificate_arn must come from the validation resource so consumers wait until the certificate is issued."
   }
 }
