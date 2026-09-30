@@ -63,6 +63,10 @@ jobs:
 
 
       - name: pre-commit run
+        env:
+          # tflint --init fetches ruleset plugins from the GitHub API. Without
+          # a token it shares the anonymous rate limit of the runner's IP.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # this path is needed for pre-commit
           export PATH="~/.local/bin:$PATH"
