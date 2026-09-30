@@ -16,7 +16,7 @@ module "db" {
 
   engine = "aurora-postgresql"
   # renovate: datasource=endoflife-date depName=amazon-aurora-postgresql versioning=loose
-  engine_version = "16.14"
+  engine_version = "16.15"
   engine_mode    = "provisioned"
 
   cluster_instance_class = "db.r6g.large"
