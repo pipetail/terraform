@@ -19,7 +19,7 @@ module "state_logs" {
   count = local.create_log_bucket ? 1 : 0
 
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.15.4"
+  version = "5.16.1"
 
   bucket = local.log_bucket
 
@@ -70,7 +70,7 @@ module "state_logs" {
 module "terraform_state" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.15.4"
+  version = "5.16.1"
 
   bucket = local.state_bucket
 
@@ -91,7 +91,7 @@ module "terraform_state" {
     enabled = true
   }
 
-  logging = local.state_bucket_logging
+  logging = length(local.state_bucket_logging) > 0 ? local.state_bucket_logging : null
 
   block_public_acls       = true
   block_public_policy     = true
