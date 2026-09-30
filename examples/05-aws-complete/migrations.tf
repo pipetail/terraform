@@ -38,6 +38,16 @@ moved {
   to   = aws_alb_listener_rule.ingress
 }
 
+moved {
+  from = aws_elasticache_replication_group.redis
+  to   = aws_elasticache_replication_group.valkey
+}
+
+moved {
+  from = random_password.redis_auth_token
+  to   = random_password.valkey_auth_token
+}
+
 # --- moved: module rename ---
 
 moved {
@@ -48,6 +58,11 @@ moved {
 moved {
   from = module.sg_elasticache
   to   = module.sg_redis
+}
+
+moved {
+  from = module.sg_redis
+  to   = module.sg_valkey
 }
 
 # --- moved: extracting a resource into a module ---
