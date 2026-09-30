@@ -7,6 +7,12 @@ permissions:
   pull-requests: write # For dflook comments on PR
 
 on:
+  workflow_dispatch:
+    inputs:
+      auto_approve:
+        description: Auto approve Terraform apply
+        required: false
+        default: 'true'
   push:
     branches:
       - "master"
@@ -39,3 +45,4 @@ jobs:
         uses: dflook/terraform-apply@82a1042d40c66856406bf648832fc5d6b03ca74c # v3
         with:
           path: examples/04-aws-wireguard-vpn
+          auto_approve: ${{ github.event.inputs.auto_approve || 'false' }}

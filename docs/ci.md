@@ -18,7 +18,7 @@ Every workflow lives in [`.github/workflows`](../.github/workflows). Every actio
 
 | Workflow | What it does |
 |---|---|
-| `terraform-apply-NN.yaml` | Applies the plan that was approved on the PR. Example 06 is destroyed again right after. Example 05 is plan-only and is not applied. |
+| `terraform-apply-NN.yaml` | Applies the plan that was approved on the PR. A manual run with `auto_approve` set to true applies without a PR plan. Example 06 is destroyed again right after. Example 05 is plan-only and is not applied. |
 | `module-release.yaml` | Tags and releases every module the merge changed, as `<module>-vX.Y.Z`. |
 | `lambda-release.yaml`, `pipetail-cloud-*-release.yaml` | Release the modules that keep their own version files. |
 | `packer-wireguard-04.yaml` | Builds the WireGuard AMI when example 04's Packer files change. It calls the reusable `packer-build.yaml`, which validates on PRs and builds on merge. |
@@ -27,7 +27,6 @@ Every workflow lives in [`.github/workflows`](../.github/workflows). Every actio
 
 | Workflow | When | What it does |
 |---|---|---|
-| `periodic-terraform-apply-NN.yaml` | weekly | Re-applies examples 01 to 04, which also corrects drift. Example 06 is applied and destroyed again. |
 | `update-bottlerocket-ami.yaml` | Mondays 08:00 UTC | Opens a PR when a newer Bottlerocket AMI is published in SSM. |
 | `terraform-state-unlock.yaml` | daily 02:00 UTC | Removes S3 state locks older than four hours. It can also be started by hand. |
 
