@@ -28,7 +28,7 @@ resource "aws_elasticache_replication_group" "redis" {
 
   engine = "redis"
   # renovate: datasource=endoflife-date depName=amazon-elasticache-redis versioning=loose
-  engine_version = "6.2"
+  engine_version = "7.1"
 
   port               = 6379
   subnet_group_name  = module.vpc.elasticache_subnet_group_name
