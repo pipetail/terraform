@@ -10,12 +10,15 @@ import * as iamAccessKeys from "../checks/iam-access-keys.mjs";
 import * as ebsResources from "../checks/ebs-resources.mjs";
 import * as amiCleanup from "../checks/ami-cleanup.mjs";
 
+const isUrgentEol = (f) => f.severity === "urgent" || f.severity === "expired";
+
+// frequency "weekly" posts on Mondays only; dailyIf still posts the findings it accepts on other days
 const checks = [
   { name: "RDS maintenance", module: rdsMaintenance, regional: true },
   { name: "ElastiCache updates", module: elasticacheUpdates, regional: true },
-  { name: "Engine EOL", module: engineEol, regional: true },
+  { name: "Engine EOL", module: engineEol, regional: true, frequency: "weekly", dailyIf: isUrgentEol },
   { name: "ACM certificates", module: acmCertificates, regional: true },
-  { name: "EKS EOL", module: eksEol, regional: true },
+  { name: "EKS EOL", module: eksEol, regional: true, frequency: "weekly", dailyIf: isUrgentEol },
   { name: "Savings Plans", module: savingsPlans, regional: false },
   { name: "IAM access keys", module: iamAccessKeys, regional: false, frequency: "weekly" },
   { name: "EBS resources", module: ebsResources, regional: true },
@@ -37,7 +40,7 @@ function findingsBody(module, findings) {
 export async function handleScheduledCheck() {
   const dayOfWeek = new Date().getUTCDay();
   const isMonday = dayOfWeek === 1;
-  const activeChecks = checks.filter((c) => c.frequency !== "weekly" || isMonday);
+  const activeChecks = checks.filter((c) => c.frequency !== "weekly" || isMonday || c.dailyIf);
 
   const results = await Promise.allSettled(
     activeChecks.map((c) => c.regional ? c.module.check(AWS_REGIONS) : c.module.check()),
@@ -49,7 +52,10 @@ export async function handleScheduledCheck() {
       continue;
     }
 
-    const findings = results[i].value;
+    let findings = results[i].value;
+    if (activeChecks[i].frequency === "weekly" && !isMonday) {
+      findings = findings.filter(activeChecks[i].dailyIf);
+    }
     if (findings.length > 0) {
       const message = activeChecks[i].module.format(findings);
       await postToSlack(message);
