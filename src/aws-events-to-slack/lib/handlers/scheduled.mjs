@@ -12,7 +12,6 @@ import * as amiCleanup from "../checks/ami-cleanup.mjs";
 
 const isUrgentEol = (f) => f.severity === "urgent" || f.severity === "expired";
 
-// frequency "weekly" posts on Mondays only; dailyIf still posts the findings it accepts on other days
 const checks = [
   { name: "RDS maintenance", module: rdsMaintenance, regional: true },
   { name: "ElastiCache updates", module: elasticacheUpdates, regional: true },
