@@ -12,7 +12,7 @@ locals {
   # endoflife.date has no ElastiCache-specific Valkey product, so this tracks
   # upstream Valkey releases, which can reach ElastiCache later.
   # renovate: datasource=endoflife-date depName=valkey versioning=loose
-  valkey_version = "9.1"
+  valkey_version = "9.1.2"
 }
 
 resource "aws_elasticache_replication_group" "valkey" {
