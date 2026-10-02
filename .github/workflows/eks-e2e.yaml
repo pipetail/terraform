@@ -49,10 +49,12 @@ jobs:
 
       # Step timeouts, not a job timeout: a job timeout would also cut off
       # the destroy below and leave a cluster running.
+      # Terraform never sees the step timeout's signal and dies holding the
+      # state lock. The inner SIGINT lets it save state and unlock first.
       - name: terraform apply
         if: ${{ !inputs.destroy_only }}
         timeout-minutes: 40
-        run: terraform -chdir="$EXAMPLE" apply -input=false -auto-approve
+        run: timeout --signal=INT --kill-after=4m 35m terraform -chdir="$EXAMPLE" apply -input=false -auto-approve
 
       - name: Wait for Ready nodes
         if: ${{ !inputs.destroy_only }}
