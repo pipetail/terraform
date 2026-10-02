@@ -58,6 +58,17 @@
         "digest"
       ],
       "automerge": true
+    },
+    {
+      "description": "ElastiCache Valkey and EKS accept only <major>.<minor>, but endoflife.date reports each cycle's latest release (9.1.2, 1.36-eks-13), so keep the cycle part",
+      "matchDatasources": [
+        "endoflife-date"
+      ],
+      "matchDepNames": [
+        "valkey",
+        "amazon-eks"
+      ],
+      "extractVersion": "^(?<version>\\d+\\.\\d+)"
     }
   ],
   "customManagers": [
