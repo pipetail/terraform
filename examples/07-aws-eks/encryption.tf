@@ -19,6 +19,7 @@ resource "aws_kms_key" "eks" {
           AWS = data.aws_iam_role.github_actions.arn
         }
         Action = [
+          "kms:CreateAlias",
           "kms:Describe*",
           "kms:Enable*",
           "kms:List*",
