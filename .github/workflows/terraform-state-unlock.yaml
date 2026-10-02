@@ -20,6 +20,8 @@ on:
           - 04-aws-wireguard-vpn
           - 05-aws-complete
           - 06-minimal-aws-terraform-bootstrap
+          - 07-aws-eks
+          - 08-aws-audit-logging
 
 jobs:
   auto-unlock:
@@ -45,6 +47,8 @@ jobs:
             ["04-aws-wireguard-vpn"]="pipetail-examples-terraform-state:04-aws-wireguard-vpn.tflock"
             ["05-aws-complete"]="pipetail-examples-terraform-state:05-aws-complete.tflock"
             ["06-minimal-aws-terraform-bootstrap"]="06-minimal-aws-terraform-bootstrap-tf-state-eu-west-1:infrastructure.tflock"
+            ["07-aws-eks"]="pipetail-examples-terraform-state:07-aws-eks.tflock"
+            ["08-aws-audit-logging"]="pipetail-examples-terraform-state:08-aws-audit-logging.tflock"
           )
 
           echo "## Stale Lock Detection Report" >> "$GITHUB_STEP_SUMMARY"
@@ -108,6 +112,8 @@ jobs:
             ["04-aws-wireguard-vpn"]="pipetail-examples-terraform-state:04-aws-wireguard-vpn.tflock"
             ["05-aws-complete"]="pipetail-examples-terraform-state:05-aws-complete.tflock"
             ["06-minimal-aws-terraform-bootstrap"]="06-minimal-aws-terraform-bootstrap-tf-state-eu-west-1:infrastructure.tflock"
+            ["07-aws-eks"]="pipetail-examples-terraform-state:07-aws-eks.tflock"
+            ["08-aws-audit-logging"]="pipetail-examples-terraform-state:08-aws-audit-logging.tflock"
           )
 
           IFS=':' read -r BUCKET LOCK_KEY <<< "${ENVIRONMENTS[$ENVIRONMENT]}"
