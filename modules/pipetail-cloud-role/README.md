@@ -5,13 +5,14 @@ trusts the pipetail.cloud AWS account only when the call carries the external ID
 generated for this connection, and its inline policy lists the Describe, List and Get actions
 the scans call instead of the AWS-managed SecurityAudit policy. After apply, paste the `role_arn`
 output into pipetail.cloud. The Cost Explorer calls the scans make through this role are billed
-per request to the scanned account.
+per request to the scanned account. API Gateway reads are limited to the REST API list and its
+stages, because `apigateway:GET` on every path would also return API key values.
 
 ## Usage
 
 ```hcl
 module "pipetail_cloud_role" {
-  source = "github.com/pipetail/terraform//modules/pipetail-cloud-role?ref=pipetail-cloud-role-v2.2.0"
+  source = "github.com/pipetail/terraform//modules/pipetail-cloud-role?ref=pipetail-cloud-role-v2.3.0"
 
   external_id = "example-external-id"
 }

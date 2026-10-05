@@ -34,7 +34,7 @@ resource "aws_iam_role_policy" "scan_read" {
   role = aws_iam_role.pipetail_cloud.id
 
   # Every action the scan services call, and nothing else — the broad AWS-managed
-  # SecurityAudit policy is deliberately not attached. All of these are account-wide
+  # SecurityAudit policy is deliberately not attached. PipetailScanRead holds account-wide
   # Describe/List/Get calls with no resource-level scoping available, hence Resource "*".
   # ce:Get* calls are the only billable ones (Cost Explorer API, priced
   # per request): https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/
@@ -59,6 +59,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "budgets:ViewBudget",
           "ce:GetAnomalies",
           "ce:GetAnomalyMonitors",
+          "ce:GetAnomalySubscriptions",
           "ce:GetCostForecast",
           "ce:GetReservationCoverage",
           "ce:GetReservationPurchaseRecommendation",
@@ -71,6 +72,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "cloudtrail:LookupEvents",
           "cloudwatch:DescribeAlarms",
           "cloudwatch:GetMetricData",
+          "codebuild:ListProjects",
           # Compute Optimizer answers only for accounts that opted in (free, one-time);
           # an unenrolled account returns status Inactive rather than an error.
           "compute-optimizer:GetAutoScalingGroupRecommendations",
@@ -87,6 +89,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "ec2:DescribeInstances",
           "ec2:DescribeNatGateways",
           "ec2:DescribeNetworkAcls",
+          "ec2:DescribeRegions",
           "ec2:DescribeReservedInstances",
           "ec2:DescribeRouteTables",
           "ec2:DescribeSecurityGroups",
@@ -150,6 +153,18 @@ resource "aws_iam_role_policy" "scan_read" {
           "tag:GetResources",
         ]
         Resource = "*"
+      },
+      {
+        # API Gateway authorizes management reads by HTTP verb and resource path, so
+        # apigateway:GET on "*" would also return API key values from /apikeys. These two
+        # paths are GetRestApis and GetStages.
+        Sid    = "PipetailApiGatewayRead"
+        Effect = "Allow"
+        Action = ["apigateway:GET"]
+        Resource = [
+          "arn:aws:apigateway:*::/restapis",
+          "arn:aws:apigateway:*::/restapis/*/stages",
+        ]
       }
     ]
   })
