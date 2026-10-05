@@ -59,6 +59,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "budgets:ViewBudget",
           "ce:GetAnomalies",
           "ce:GetAnomalyMonitors",
+          "ce:GetAnomalySubscriptions",
           "ce:GetCostForecast",
           "ce:GetReservationCoverage",
           "ce:GetReservationPurchaseRecommendation",
