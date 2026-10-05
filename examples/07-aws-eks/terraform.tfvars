@@ -7,4 +7,4 @@ subnets = {
   private = ["10.70.50.0/24", "10.70.51.0/24"]
 }
 
-k8s_version = "1.36"
+k8s_version = "1.37"

@@ -6,7 +6,7 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  k8s_version      = "1.36"
+  k8s_version      = "1.37"
   k8s_architecture = "arm64"
 
   // bottlerocket v1.66.0, bumped by the update-bottlerocket-ami workflow
