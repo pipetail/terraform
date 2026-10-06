@@ -87,6 +87,21 @@ run "scan_policy_grants_only_read_actions" {
   }
 }
 
+run "scan_read_lists_amis_and_billed_cost" {
+  command = apply
+
+  assert {
+    condition = length(setsubtract(
+      ["ce:GetCostAndUsage", "ec2:DescribeImages", "ec2:DescribeLaunchTemplateVersions"],
+      flatten([
+        for s in jsondecode(aws_iam_role_policy.scan_read.policy).Statement : flatten([s.Action])
+        if s.Sid == "PipetailScanRead" && s.Resource == "*"
+      ])
+    )) == 0
+    error_message = "PipetailScanRead must grant ce:GetCostAndUsage, ec2:DescribeImages and ec2:DescribeLaunchTemplateVersions; the portal checks its advertised actions against that statement only."
+  }
+}
+
 run "exposes_the_role_name" {
   command = apply
 
