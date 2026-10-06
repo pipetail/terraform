@@ -12,7 +12,7 @@ stages, because `apigateway:GET` on every path would also return API key values.
 
 ```hcl
 module "pipetail_cloud_role" {
-  source = "github.com/pipetail/terraform//modules/pipetail-cloud-role?ref=pipetail-cloud-role-v2.3.0"
+  source = "github.com/pipetail/terraform//modules/pipetail-cloud-role?ref=pipetail-cloud-role-v2.4.0"
 
   external_id = "example-external-id"
 }
