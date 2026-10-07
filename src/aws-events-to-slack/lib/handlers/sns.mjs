@@ -73,7 +73,6 @@ export async function handleSnsEvent(event) {
     return { statusCode: 200, body: "OK" };
   }
 
-  // EventBridge delivers the whole event as the SNS message, so the finding is in detail.
   if (snsMessage.source === "aws.guardduty" && snsMessage["detail-type"] === "GuardDuty Finding") {
     const finding = snsMessage.detail || {};
     const message = formatGuardDutyFinding(finding);
@@ -456,7 +455,6 @@ function formatCloudWatchAlarm(alarm) {
   };
 }
 
-// GuardDuty's bands: Critical 9.0-10.0, High 7.0-8.9, Medium 4.0-6.9, Low 1.0-3.9.
 function guardDutySeverity(value) {
   if (value >= 9) return { label: "Critical", emoji: ":rotating_light:", color: "danger" };
   if (value >= 7) return { label: "High", emoji: ":rotating_light:", color: "danger" };
