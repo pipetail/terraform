@@ -73,6 +73,20 @@ export async function handleSnsEvent(event) {
     return { statusCode: 200, body: "OK" };
   }
 
+  // EventBridge delivers the whole event as the SNS message, so the finding is in detail.
+  if (snsMessage.source === "aws.guardduty" && snsMessage["detail-type"] === "GuardDuty Finding") {
+    const finding = snsMessage.detail || {};
+    const message = formatGuardDutyFinding(finding);
+    await postToSlack(message);
+    logSlackForward({
+      category: "security",
+      severity: severityFromColor(message.attachments?.[0]?.color),
+      title: message.attachments?.[0]?.fallback,
+      body: guardDutyLogBody(finding),
+    });
+    return { statusCode: 200, body: "OK" };
+  }
+
   const message = formatBudgetMessage(snsMessage, snsSubject, rawText);
   await postToSlack(message);
   logSlackForward({
@@ -436,6 +450,100 @@ function formatCloudWatchAlarm(alarm) {
       {
         color: state.color,
         fallback: `${state.emoji} CloudWatch Alarm: ${alarmName} ${state.phrase}`,
+        blocks,
+      },
+    ],
+  };
+}
+
+// GuardDuty's bands: Critical 9.0-10.0, High 7.0-8.9, Medium 4.0-6.9, Low 1.0-3.9.
+function guardDutySeverity(value) {
+  if (value >= 9) return { label: "Critical", emoji: ":rotating_light:", color: "danger" };
+  if (value >= 7) return { label: "High", emoji: ":rotating_light:", color: "danger" };
+  if (value >= 4) return { label: "Medium", emoji: ":warning:", color: "warning" };
+  return { label: "Low", emoji: ":information_source:", color: NEUTRAL_COLOR };
+}
+
+function guardDutyResource(resource = {}) {
+  const id =
+    resource.instanceDetails?.instanceId ||
+    resource.accessKeyDetails?.userName ||
+    resource.s3BucketDetails?.[0]?.name ||
+    resource.rdsDbInstanceDetails?.dbInstanceIdentifier ||
+    resource.lambdaDetails?.functionName ||
+    resource.eksClusterDetails?.name ||
+    resource.ecsClusterDetails?.name;
+  const type = resource.resourceType || "Unknown";
+  return id ? `${type} ${id}` : type;
+}
+
+function isSampleFinding(finding) {
+  return finding.service?.additionalInfo?.sample === true;
+}
+
+function guardDutyLogBody(finding) {
+  const severity = guardDutySeverity(Number(finding.severity) || 0);
+  let body = `${finding.type || "Unknown type"} (${severity.label} ${finding.severity ?? "?"}) on ${guardDutyResource(finding.resource)} in ${finding.region || "Unknown"}`;
+  if (isSampleFinding(finding)) body += " [sample]";
+  if (finding.title) body += `: ${finding.title.replace(/\s+/g, " ").slice(0, 300)}`;
+  return body;
+}
+
+function formatGuardDutyFinding(finding) {
+  const severity = guardDutySeverity(Number(finding.severity) || 0);
+  const region = finding.region || "Unknown";
+  const accountId = finding.accountId || "Unknown";
+  const accountDisplay = AWS_ACCOUNT_NAME ? `${AWS_ACCOUNT_NAME} (${accountId})` : accountId;
+  const sample = isSampleFinding(finding) ? "[sample] " : "";
+  const title = finding.title || finding.type || "GuardDuty finding";
+
+  const fields = [
+    { type: "mrkdwn", text: `*Type:*\n\`${finding.type || "Unknown"}\`` },
+    { type: "mrkdwn", text: `*Severity:*\n${severity.label} (${finding.severity ?? "?"})` },
+    { type: "mrkdwn", text: `*Resource:*\n${guardDutyResource(finding.resource)}` },
+    { type: "mrkdwn", text: `*Region:*\n${region}` },
+  ];
+
+  if (finding.service?.count > 1) {
+    fields.push({ type: "mrkdwn", text: `*Occurrences:*\n${finding.service.count}` });
+  }
+
+  if (finding.id && finding.region) {
+    const url = `https://${region}.console.aws.amazon.com/guardduty/home?region=${region}#/findings?macros=current&fId=${finding.id}`;
+    fields.push({ type: "mrkdwn", text: `*Console:*\n<${url}|View in GuardDuty>` });
+  }
+
+  const blocks = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: truncate(`${severity.emoji} ${sample}GuardDuty: ${title}`, SLACK_HEADER_LIMIT),
+        emoji: true,
+      },
+    },
+  ];
+
+  if (finding.description) {
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: truncate(finding.description, ALARM_TEXT_LIMIT) },
+    });
+  }
+
+  blocks.push(
+    { type: "section", fields },
+    {
+      type: "context",
+      elements: [{ type: "mrkdwn", text: `Account: ${accountDisplay}` }],
+    }
+  );
+
+  return {
+    attachments: [
+      {
+        color: severity.color,
+        fallback: `${severity.emoji} ${sample}GuardDuty ${severity.label}: ${finding.type || title}`,
         blocks,
       },
     ],
