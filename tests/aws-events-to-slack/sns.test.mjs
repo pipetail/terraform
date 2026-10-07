@@ -227,6 +227,142 @@ describe("CloudWatch alarm notifications", () => {
   });
 });
 
+function guardDutyEvent(detailOverrides = {}) {
+  return {
+    version: "0",
+    id: "11111111-2222-3333-4444-555555555555",
+    "detail-type": "GuardDuty Finding",
+    source: "aws.guardduty",
+    account: "123456789012",
+    time: "2026-10-07T09:00:00Z",
+    region: "eu-west-1",
+    resources: [],
+    detail: {
+      schemaVersion: "2.0",
+      accountId: "123456789012",
+      region: "eu-west-1",
+      partition: "aws",
+      id: "abc123finding",
+      arn: "arn:aws:guardduty:eu-west-1:123456789012:detector/det1/finding/abc123finding",
+      type: "UnauthorizedAccess:EC2/SSHBruteForce",
+      resource: {
+        resourceType: "Instance",
+        instanceDetails: { instanceId: "i-0123456789abcdef0" },
+      },
+      service: { serviceName: "guardduty", count: 3, additionalInfo: {} },
+      severity: 5,
+      createdAt: "2026-10-07T08:55:00.000Z",
+      updatedAt: "2026-10-07T09:00:00.000Z",
+      title: "198.51.100.7 is performing SSH brute force attacks against i-0123456789abcdef0.",
+      description: "198.51.100.7 is performing SSH brute force attacks against i-0123456789abcdef0. Brute force attacks are used to gain unauthorized access to your instance by guessing the SSH password.",
+      ...detailOverrides,
+    },
+  };
+}
+
+describe("GuardDuty findings", () => {
+  it("formats a medium finding with type, resource, Region and console link", async () => {
+    const { message, forward } = await send(guardDutyEvent());
+
+    assert.deepEqual(message, {
+      attachments: [
+        {
+          color: "warning",
+          fallback: ":warning: GuardDuty Medium: UnauthorizedAccess:EC2/SSHBruteForce",
+          blocks: [
+            {
+              type: "header",
+              text: {
+                type: "plain_text",
+                text: ":warning: GuardDuty: 198.51.100.7 is performing SSH brute force attacks against i-0123456789abcdef0.",
+                emoji: true,
+              },
+            },
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: "198.51.100.7 is performing SSH brute force attacks against i-0123456789abcdef0. Brute force attacks are used to gain unauthorized access to your instance by guessing the SSH password.",
+              },
+            },
+            {
+              type: "section",
+              fields: [
+                { type: "mrkdwn", text: "*Type:*\n`UnauthorizedAccess:EC2/SSHBruteForce`" },
+                { type: "mrkdwn", text: "*Severity:*\nMedium (5)" },
+                { type: "mrkdwn", text: "*Resource:*\nInstance i-0123456789abcdef0" },
+                { type: "mrkdwn", text: "*Region:*\neu-west-1" },
+                { type: "mrkdwn", text: "*Occurrences:*\n3" },
+                {
+                  type: "mrkdwn",
+                  text: "*Console:*\n<https://eu-west-1.console.aws.amazon.com/guardduty/home?region=eu-west-1#/findings?macros=current&fId=abc123finding|View in GuardDuty>",
+                },
+              ],
+            },
+            {
+              type: "context",
+              elements: [{ type: "mrkdwn", text: "Account: example-account (123456789012)" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    assert.equal(forward.category, "security");
+    assert.equal(forward.severity, "medium");
+    assert.equal(forward.title, message.attachments[0].fallback);
+    assert.match(forward.body, /^UnauthorizedAccess:EC2\/SSHBruteForce \(Medium 5\) on Instance i-0123456789abcdef0 in eu-west-1: 198\.51\.100\.7/);
+  });
+
+  it("maps high and critical findings to a red alert", async () => {
+    for (const [value, label] of [[7, "High"], [8.9, "High"], [9, "Critical"], [10, "Critical"]]) {
+      posted = [];
+      forwards = [];
+      const { message, forward } = await send(guardDutyEvent({ severity: value }));
+      assert.equal(message.attachments[0].color, "danger");
+      assert.equal(message.attachments[0].fallback, `:rotating_light: GuardDuty ${label}: UnauthorizedAccess:EC2/SSHBruteForce`);
+      assert.equal(forward.severity, "high");
+    }
+  });
+
+  it("maps a low finding to a grey notice", async () => {
+    const { message, forward } = await send(guardDutyEvent({ severity: 2 }));
+
+    assert.equal(message.attachments[0].color, "#9E9E9E");
+    assert.ok(JSON.stringify(message).includes("*Severity:*\\nLow (2)"));
+    assert.equal(forward.severity, "medium");
+  });
+
+  it("marks sample findings so a test is not mistaken for an attack", async () => {
+    const { message, forward } = await send(
+      guardDutyEvent({ service: { serviceName: "guardduty", count: 1, additionalInfo: { sample: true } } })
+    );
+
+    assert.match(header(message), /^:warning: \[sample\] GuardDuty: /);
+    assert.match(message.attachments[0].fallback, /\[sample\]/);
+    assert.match(forward.body, /\[sample\]/);
+    assert.equal(JSON.stringify(message).includes("*Occurrences:*"), false);
+  });
+
+  it("names the resource for an access key finding", async () => {
+    const { message } = await send(
+      guardDutyEvent({
+        type: "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS",
+        resource: { resourceType: "AccessKey", accessKeyDetails: { userName: "example-role", accessKeyId: "ASIAEXAMPLE" } },
+      })
+    );
+
+    assert.ok(JSON.stringify(message).includes("*Resource:*\\nAccessKey example-role"));
+  });
+
+  it("keeps a long title within Slack's header limit", async () => {
+    const { message } = await send(guardDutyEvent({ title: "x".repeat(400) }));
+
+    assert.ok(header(message).length <= 150);
+    assert.match(header(message), /^:warning: GuardDuty: x+…$/);
+  });
+});
+
 describe("unrecognised SNS messages", () => {
   it("are shown as a neutral AWS notification, not a cost alert", async () => {
     const { message, forward } = await send({ foo: "bar" }, { subject: "Something happened" });
