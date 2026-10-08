@@ -7,15 +7,8 @@ permissions: read-all
 
 jobs:
   precommit:
-    # The ubuntu-26.04 leg is a non-blocking canary. The name expression gives
-    # the 24.04 leg the plain check name, so required checks match it.
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os == 'ubuntu-26.04' && 'Run pre-commit checks (ubuntu-26.04 canary)' || 'Run pre-commit checks' }}
-    continue-on-error: ${{ matrix.os == 'ubuntu-26.04' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ubuntu-latest
+    name: Run pre-commit checks
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
