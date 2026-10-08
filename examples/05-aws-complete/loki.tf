@@ -228,7 +228,7 @@ resource "aws_iam_role_policy" "loki_ecs_task_command_exec" {
 module "loki_storage" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.16.1"
+  version = "5.16.2"
 
   bucket = "${var.name_prefix}-loki-data"
 
