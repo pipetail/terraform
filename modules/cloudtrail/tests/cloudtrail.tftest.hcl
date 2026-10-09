@@ -11,13 +11,6 @@ mock_provider "aws" {
     }
   }
 
-  mock_data "aws_region" {
-    defaults = {
-      name   = "eu-west-1"
-      region = "eu-west-1"
-    }
-  }
-
   mock_resource "aws_s3_bucket" {
     defaults = {
       arn = "arn:aws:s3:::example-cloudtrail-global-events"
