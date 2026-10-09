@@ -14,7 +14,7 @@ resource "helm_release" "this" {
   values = [
     templatefile("${path.module}/values.yaml", {
       cluster_name = var.cluster_name,
-      region       = data.aws_region.current.name,
+      region       = data.aws_region.current.region,
       role_arn     = aws_iam_role.this.arn,
     })
   ]
@@ -29,7 +29,7 @@ terraform {
     }
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 4.13.0, < 7.0.0"
+      version = ">= 6.0.0, < 7.0.0"
     }
   }
 }
