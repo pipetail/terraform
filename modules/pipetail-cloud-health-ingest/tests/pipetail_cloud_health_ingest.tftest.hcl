@@ -89,13 +89,8 @@ run "connection_carries_a_placeholder_not_the_key" {
   }
 
   assert {
-    condition     = strcontains(output.set_key_command, "'${aws_cloudwatch_event_connection.this.auth_parameters[0].api_key[0].key}'")
-    error_message = "set_key_command must write the same header name the connection uses, or the key moves to a header pipetail.cloud does not read."
-  }
-
-  assert {
-    condition     = strcontains(output.set_key_command, "--region eu-central-1") && strcontains(output.set_key_command, "'pipetail-cloud-health-ingest'")
-    error_message = "set_key_command must target this Region's connection by name."
+    condition     = aws_cloudwatch_event_connection.this.auth_parameters[0].api_key[0].key == "X-Pipetail-Ingest-Key"
+    error_message = "The README snippet writes the key under this header name and pipetail.cloud reads it from there; change all three together."
   }
 
   assert {
