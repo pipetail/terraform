@@ -1,13 +1,16 @@
 data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
-data "aws_region" "current" {}
 
 locals {
   trail_name = "${var.name_prefix}-global-events"
 
+  # Read from the log group ARN because no attribute of data.aws_region works across the whole
+  # allowed provider range: region does not exist before v6, and v6 deprecates both name and id.
+  region = split(":", aws_cloudwatch_log_group.cloudtrail.arn)[3]
+
   # Built by hand: the trail depends on the bucket policy, so the policy cannot
   # reference aws_cloudtrail.main.arn without a dependency cycle.
-  trail_arn = "arn:${data.aws_partition.current.partition}:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
+  trail_arn = "arn:${data.aws_partition.current.partition}:cloudtrail:${local.region}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
 }
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
