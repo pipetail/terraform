@@ -3,17 +3,41 @@
 Forwards the AWS Health events of one Region to pipetail.cloud through an EventBridge rule, API
 destination and connection, with an SQS dead-letter queue for events that could not be
 delivered. The ingest key is not a Terraform input, so it never enters state: the connection is
-created with a placeholder, and after apply you set the real key once by running the snippet in
-the `set_key_command` output. Create one instance for each Region that holds resources, plus one
-in us-east-1, where AWS delivers the Health events that are not tied to a Region.
+created with a placeholder, and after apply you set the real key once with the snippet under
+"Set the ingest key". Create one instance for each Region that holds resources, plus one in
+us-east-1, where AWS delivers the Health events that are not tied to a Region.
 
 ## Usage
 
 ```hcl
 module "pipetail_cloud_health_ingest" {
-  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v1.0.2"
+  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v2.0.0"
 }
 ```
+
+## Set the ingest key
+
+Generate the key in pipetail.cloud under Settings. Then run this snippet once for each instance of
+the module, with `region` set to that instance's Region and `name` set to its `name` input. It
+needs bash or zsh.
+
+```bash
+(
+  set -e
+  region="eu-central-1"
+  name="pipetail-cloud-health-ingest"
+  d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+  printf 'Paste the AWS Health ingest key (input hidden): ' >&2
+  IFS= read -rs key; printf '\n' >&2
+  printf '{"Name":"%s","AuthParameters":{"ApiKeyAuthParameters":{"ApiKeyName":"X-Pipetail-Ingest-Key","ApiKeyValue":"%s"}}}' "$name" "$key" > "$d/connection.json"
+  aws events update-connection --region "$region" --cli-input-json "file://$d/connection.json"
+)
+```
+
+The snippet writes the key straight to EventBridge, so the key never enters Terraform state. It
+also keeps the key out of the process arguments and the shell history. `printf` is a shell builtin
+that writes the key into a temporary file, and the `trap` removes that file even if you interrupt
+the snippet. To rotate the key, run the snippet again with the new value. No apply is needed.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -46,7 +70,6 @@ No modules.
 | [aws_sqs_queue.dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue_policy.dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_policy) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
-| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
@@ -66,5 +89,4 @@ No modules.
 | <a name="output_dlq_arn"></a> [dlq\_arn](#output\_dlq\_arn) | ARN of the dead-letter queue, or null when create\_dlq is false |
 | <a name="output_dlq_queue_url"></a> [dlq\_queue\_url](#output\_dlq\_queue\_url) | URL of the dead-letter queue to read undelivered events from, or null when create\_dlq is false |
 | <a name="output_rule_arn"></a> [rule\_arn](#output\_rule\_arn) | ARN of the EventBridge rule matching AWS Health events in this Region |
-| <a name="output_set_key_command"></a> [set\_key\_command](#output\_set\_key\_command) | Run this snippet once after apply; it prompts for the AWS Health ingest key generated in pipetail.cloud under Settings with the input hidden. The key is written straight to EventBridge, which is why it never enters Terraform state, and it stays out of the process argv and shell history: the printf builtin writes it into a mktemp-owned payload file that a trap removes even on interruption. Rotating the key is the same snippet with the new value, and no apply is needed. Needs bash or zsh. |
 <!-- END_TF_DOCS -->

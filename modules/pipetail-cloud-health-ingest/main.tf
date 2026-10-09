@@ -2,7 +2,7 @@
 #
 # The ingest key is deliberately not an input: any value Terraform passes to a connection is
 # stored in plaintext in state and in saved plans. The connection is created with a placeholder
-# and the real key is written directly to EventBridge with the set_key_command output. Terraform
+# and the real key is written directly to EventBridge with the snippet in the README. Terraform
 # therefore cannot detect an unset, wrong, or rotated key; failed deliveries arriving in the
 # dead-letter queue are the detection path.
 #
@@ -17,16 +17,14 @@
 # https://docs.aws.amazon.com/health/latest/ug/choosing-a-region.html
 
 locals {
-  # Named in the connection and again in the set_key_command output. update-connection rewrites
-  # both the header name and the value, so a drift between the two would move the key to a header
-  # pipetail.cloud does not read.
+  # Named in the connection and again in the README snippet that sets the key. update-connection
+  # rewrites both the header name and the value, so a drift between the two would move the key to
+  # a header pipetail.cloud does not read.
   ingest_key_header = "X-Pipetail-Ingest-Key"
 
   # EventBridge requires an API key when the connection is created.
   ingest_key_placeholder = "REPLACE_ME"
 }
-
-data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
