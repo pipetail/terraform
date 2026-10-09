@@ -24,9 +24,11 @@ locals {
 
   # EventBridge requires an API key when the connection is created.
   ingest_key_placeholder = "REPLACE_ME"
-}
 
-data "aws_region" "current" {}
+  # Read from the connection ARN because no attribute of data.aws_region works across the whole
+  # allowed provider range: region does not exist before v6, and v6 deprecates both name and id.
+  region = split(":", aws_cloudwatch_event_connection.this.arn)[3]
+}
 
 data "aws_caller_identity" "current" {}
 

@@ -7,7 +7,7 @@ output "set_key_command" {
       printf 'Paste the AWS Health ingest key (input hidden): ' >&2
       IFS= read -rs key; printf '\n' >&2
       printf '{"Name":"%s","AuthParameters":{"ApiKeyAuthParameters":{"ApiKeyName":"%s","ApiKeyValue":"%s"}}}' '${aws_cloudwatch_event_connection.this.name}' '${local.ingest_key_header}' "$key" > "$d/connection.json"
-      aws events update-connection --region ${data.aws_region.current.name} --cli-input-json "file://$d/connection.json"
+      aws events update-connection --region ${local.region} --cli-input-json "file://$d/connection.json"
     )
   EOT
 }

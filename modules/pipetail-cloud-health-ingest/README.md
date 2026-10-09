@@ -11,7 +11,7 @@ in us-east-1, where AWS delivers the Health events that are not tied to a Region
 
 ```hcl
 module "pipetail_cloud_health_ingest" {
-  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v1.0.2"
+  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v1.0.3"
 }
 ```
 
@@ -46,7 +46,6 @@ No modules.
 | [aws_sqs_queue.dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue_policy.dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_policy) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
-| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
