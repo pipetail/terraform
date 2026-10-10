@@ -61,7 +61,7 @@ resource "aws_alb_target_group" "ingress" {
 module "elb_logs" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.16.1"
+  version = "5.16.2"
 
   bucket = "${var.name_prefix}-elb-logs"
 

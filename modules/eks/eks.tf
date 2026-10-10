@@ -11,7 +11,7 @@ locals {
 module "eks" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.26.0"
+  version = "21.29.0"
 
   // Leaving endpoint_public_access_cidrs unset falls through to the upstream
   // default of 0.0.0.0/0, i.e. the Kubernetes API is reachable from anywhere
