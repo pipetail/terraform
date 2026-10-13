@@ -153,6 +153,7 @@ resource "aws_iam_role_policy" "scan_read" {
           "savingsplans:DescribeSavingsPlans",
           "secretsmanager:ListSecrets",
           "securityhub:DescribeHub",
+          "securityhub:DescribeSecurityHubV2",
           "tag:GetResources",
         ]
         Resource = "*"

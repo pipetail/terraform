@@ -102,6 +102,21 @@ run "scan_read_lists_amis_and_billed_cost" {
   }
 }
 
+run "scan_read_detects_both_security_hubs" {
+  command = apply
+
+  assert {
+    condition = length(setsubtract(
+      ["securityhub:DescribeHub", "securityhub:DescribeSecurityHubV2"],
+      flatten([
+        for s in jsondecode(aws_iam_role_policy.scan_read.policy).Statement : flatten([s.Action])
+        if s.Sid == "PipetailScanRead" && s.Resource == "*"
+      ])
+    )) == 0
+    error_message = "PipetailScanRead must grant securityhub:DescribeHub and securityhub:DescribeSecurityHubV2; the portal checks its advertised actions against that statement only."
+  }
+}
+
 run "exposes_the_role_name" {
   command = apply
 
