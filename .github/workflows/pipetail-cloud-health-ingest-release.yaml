@@ -20,9 +20,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     name: Publish module release
-    outputs:
-      released: ${{ steps.resolve.outputs.RELEASE }}
-      version: ${{ steps.resolve.outputs.VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -30,7 +27,6 @@ jobs:
           fetch-depth: 0 # need history to diff the version against the previous commit
 
       - name: Resolve version and tag
-        id: resolve
         env:
           BEFORE: ${{ github.event.before }}
         run: |
@@ -63,7 +59,7 @@ jobs:
             echo "VERSION=${VERSION}"
             echo "TAG=pipetail-cloud-health-ingest-v${VERSION}"
             echo "RELEASE=${RELEASE}"
-          } | tee -a "$GITHUB_ENV" >> "$GITHUB_OUTPUT"
+          } >> "$GITHUB_ENV"
 
       - name: Create GitHub release
         if: env.RELEASE == 'true'
@@ -74,15 +70,3 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$TAG" \
             --notes "pipetail-cloud-health-ingest module ${VERSION}"
-
-  bump-pipetail-cloud:
-    needs: release
-    if: needs.release.outputs.released == 'true'
-    permissions:
-      contents: read
-    uses: ./.github/workflows/pipetail-cloud-bump.yaml
-    with:
-      module: pipetail-cloud-health-ingest
-      version: ${{ needs.release.outputs.version }}
-    secrets:
-      token: ${{ secrets.PIPETAIL_CLOUD_BUMP_TOKEN }}
