@@ -127,7 +127,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update Bottlerocket AMI to ${{ steps.get-version.outputs.version }}"
           branch: update-bottlerocket-ami
-          title: "Update Bottlerocket AMI to ${{ steps.get-version.outputs.version }}"
+          title: "chore: update Bottlerocket AMI to ${{ steps.get-version.outputs.version }}"
           body: |
             Updates Bottlerocket AMI from ${{ steps.current-version.outputs.current_version }} to ${{ steps.get-version.outputs.version }}.
 
