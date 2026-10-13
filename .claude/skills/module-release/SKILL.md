@@ -62,6 +62,14 @@ committed and fails on `master` if the code changed but the version did not:
 
 The tag is `<name>-v<version>` for these too. Follow semver for the bump you pick.
 
+After a release of `pipetail-cloud-role` or `pipetail-cloud-health-ingest`, the release workflow
+calls `pipetail-cloud-bump.yaml`. It runs `.github/scripts/pipetail-cloud-bump.mjs` on a checkout of
+`pipetail/pipetail-cloud`, which moves every `<module>-vX.Y.Z` lower than the new version to the new
+tag, skipping test files. It pushes branch `loop/bump-<module>-<version>` and opens one PR, or adds
+a commit to that branch when it already exists. It needs the `PIPETAIL_CLOUD_BUMP_TOKEN` secret, a
+token with contents and pull-requests write on `pipetail/pipetail-cloud`. Without it the bump job
+fails and the release still stands.
+
 `modules/aws-events-to-slack/` is released by `lambda-release.yaml`, which runs only when
 `src/aws-events-to-slack/` changes. A PR that changes only the module's `.tf` files cuts no release;
 bump `package.json` in the same PR to ship it.
