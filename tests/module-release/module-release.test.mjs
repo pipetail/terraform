@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   bumpFor,
   checkTitle,
@@ -92,4 +93,15 @@ test("checkTitle ignores PRs that change no module", () => {
 
 test("checkTitle rejects a title that is not a conventional commit", () => {
   assert.equal(checkTitle("Update README", ["README.md"], MODULES).length, 1);
+});
+
+test("the Bottlerocket AMI workflow opens a PR whose title passes checkTitle", () => {
+  const repo = new URL("../../", import.meta.url);
+  const workflow = readFileSync(new URL(".github/workflows/update-bottlerocket-ami.yaml", repo), "utf8");
+  const file = /^\s*TERRAFORM_FILE: (\S+)$/m.exec(workflow)[1];
+  const title = /^\s*title: "(.+)"$/m.exec(workflow)[1].replace("${{ steps.get-version.outputs.version }}", "v1.66.0");
+  const modules = new Set(
+    readdirSync(new URL("modules/", repo), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name),
+  );
+  assert.deepEqual(checkTitle(title, [file], modules), []);
 });
