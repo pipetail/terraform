@@ -8,6 +8,10 @@ export const THRESHOLDS_URL = process.env.THRESHOLDS_URL;
 export const AWS_REGIONS = process.env.AWS_REGIONS
   ? process.env.AWS_REGIONS.split(",").map((r) => r.trim())
   : [process.env.AWS_REGION || "eu-west-1"];
+export const RDS_MAINTENANCE_IGNORED_ACTIONS = (process.env.RDS_MAINTENANCE_IGNORED_ACTIONS || "")
+  .split(",")
+  .map((a) => a.trim())
+  .filter(Boolean);
 
 export const ENGINE_EOL_DATES = {
   "aurora-postgresql": {

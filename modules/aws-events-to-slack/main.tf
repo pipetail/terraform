@@ -146,15 +146,16 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = {
-      SLACK_WEBHOOK_URL         = jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)[var.slack_webhook_secret_key]
-      SLACK_BOT_TOKEN           = try(jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)["SLACK_BOT_TOKEN"], "")
-      SLACK_CHANNEL             = var.slack_channel
-      AWS_ACCOUNT_NAME          = var.account_name
-      AWS_ACCOUNT_ID            = data.aws_caller_identity.current.account_id
-      AWS_REGIONS               = var.regions
-      ACCESS_KEY_WARNING_DAYS   = tostring(var.access_key_warning_days)
-      CLOUDTRAIL_IGNORED_EVENTS = ""
-      THRESHOLDS_URL            = var.thresholds_url
+      SLACK_WEBHOOK_URL               = jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)[var.slack_webhook_secret_key]
+      SLACK_BOT_TOKEN                 = try(jsondecode(data.aws_secretsmanager_secret_version.slack_webhook.secret_string)["SLACK_BOT_TOKEN"], "")
+      SLACK_CHANNEL                   = var.slack_channel
+      AWS_ACCOUNT_NAME                = var.account_name
+      AWS_ACCOUNT_ID                  = data.aws_caller_identity.current.account_id
+      AWS_REGIONS                     = var.regions
+      ACCESS_KEY_WARNING_DAYS         = tostring(var.access_key_warning_days)
+      CLOUDTRAIL_IGNORED_EVENTS       = ""
+      RDS_MAINTENANCE_IGNORED_ACTIONS = join(",", var.rds_maintenance_ignored_actions)
+      THRESHOLDS_URL                  = var.thresholds_url
     }
   }
 

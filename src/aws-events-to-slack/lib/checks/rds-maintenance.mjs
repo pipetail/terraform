@@ -1,7 +1,7 @@
 import { RDSClient, DescribePendingMaintenanceActionsCommand } from "@aws-sdk/client-rds";
-import { AWS_ACCOUNT_NAME } from "../config.mjs";
+import { AWS_ACCOUNT_NAME, RDS_MAINTENANCE_IGNORED_ACTIONS } from "../config.mjs";
 
-export async function check(regions) {
+export async function check(regions, ignoredActions = RDS_MAINTENANCE_IGNORED_ACTIONS) {
   const allActions = [];
 
   for (const region of regions) {
@@ -13,7 +13,11 @@ export async function check(regions) {
         const response = await client.send(new DescribePendingMaintenanceActionsCommand({ Marker: marker }));
 
         for (const action of response.PendingMaintenanceActions || []) {
-          allActions.push({ ...action, Region: region });
+          const details = action.PendingMaintenanceActionDetails || [];
+          const kept = details.filter((detail) => !ignoredActions.includes(detail.Action));
+          // With no findings left, the scheduled handler sends no report.
+          if (details.length > 0 && kept.length === 0) continue;
+          allActions.push({ ...action, PendingMaintenanceActionDetails: kept, Region: region });
         }
         marker = response.Marker;
       } while (marker);

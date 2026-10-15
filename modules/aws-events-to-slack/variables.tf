@@ -96,6 +96,17 @@ variable "access_key_warning_days" {
   default     = 365
 }
 
+variable "rds_maintenance_ignored_actions" {
+  description = "RDS pending maintenance action types, such as os-upgrade, that the daily check leaves out of its Slack report. A resource with only ignored actions is not listed, and no report is sent when no action is left. The empty default reports every action."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for action in var.rds_maintenance_ignored_actions : can(regex("^[a-z0-9-]+$", action))])
+    error_message = "Each entry must be an RDS action type such as os-upgrade: lowercase letters, digits and hyphens."
+  }
+}
+
 variable "daily_check_schedule" {
   description = "EventBridge schedule expression for the daily maintenance/EOL/hygiene check"
   type        = string
