@@ -12,7 +12,7 @@ resource "helm_release" "traefik" {
 
   repository = "https://traefik.github.io/charts"
   chart      = "traefik"
-  version    = "41.7.1"
+  version    = "42.0.0"
 
   wait   = true
   atomic = true
