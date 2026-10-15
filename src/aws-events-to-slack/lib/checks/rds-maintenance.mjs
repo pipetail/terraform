@@ -15,8 +15,7 @@ export async function check(regions, ignoredActions = RDS_MAINTENANCE_IGNORED_AC
         for (const action of response.PendingMaintenanceActions || []) {
           const details = action.PendingMaintenanceActionDetails || [];
           const kept = details.filter((detail) => !ignoredActions.includes(detail.Action));
-          // A resource whose every action is ignored is dropped, so a batch of only ignored
-          // actions leaves no findings and the scheduled handler sends no report.
+          // With no findings left, the scheduled handler sends no report.
           if (details.length > 0 && kept.length === 0) continue;
           allActions.push({ ...action, PendingMaintenanceActionDetails: kept, Region: region });
         }
