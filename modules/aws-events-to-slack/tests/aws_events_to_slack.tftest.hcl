@@ -260,3 +260,35 @@ run "optional_sources_and_name_overrides" {
     error_message = "slack_webhook_secret_key must select which secret key holds the webhook URL."
   }
 }
+
+run "reports_every_rds_maintenance_action_by_default" {
+  command = plan
+
+  assert {
+    condition     = aws_lambda_function.this.environment[0].variables.RDS_MAINTENANCE_IGNORED_ACTIONS == ""
+    error_message = "With no ignored action types, the daily check must report every RDS maintenance action."
+  }
+}
+
+run "passes_ignored_rds_maintenance_actions_to_the_lambda" {
+  command = plan
+
+  variables {
+    rds_maintenance_ignored_actions = ["os-upgrade", "hardware-maintenance"]
+  }
+
+  assert {
+    condition     = aws_lambda_function.this.environment[0].variables.RDS_MAINTENANCE_IGNORED_ACTIONS == "os-upgrade,hardware-maintenance"
+    error_message = "The ignored action types must reach the Lambda as one comma-separated value."
+  }
+}
+
+run "rejects_an_ignored_action_that_would_split_the_list" {
+  command = plan
+
+  variables {
+    rds_maintenance_ignored_actions = ["os-upgrade,system-update"]
+  }
+
+  expect_failures = [var.rds_maintenance_ignored_actions]
+}
