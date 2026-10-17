@@ -66,7 +66,11 @@ function resource(name, ...details) {
   };
 }
 
-const OS_UPGRADE = { Action: "os-upgrade", Description: "New Operating System patch is available" };
+const OS_UPGRADE = {
+  Action: "os-upgrade",
+  AutoAppliedAfterDate: new Date("2029-12-01T00:00:00Z"),
+  Description: "New Operating System patch is available",
+};
 const SYSTEM_UPDATE = {
   Action: "system-update",
   AutoAppliedAfterDate: new Date("2030-01-01T00:00:00Z"),
@@ -83,6 +87,38 @@ const MIXED = [
   resource("app-db-0", OS_UPGRADE),
   resource("app-db-1", OS_UPGRADE, SYSTEM_UPDATE),
   resource("app-db-2", DB_UPGRADE),
+];
+
+const UNDATED_OS_PATCH = { Action: "system-update", Description: "New Operating System patch is available" };
+const UNDATED_CLUSTER_OS_PATCH = { Action: "os-upgrade", Description: "New Operating System patch is available" };
+const DATED_ENGINE_UPGRADE = {
+  Action: "system-update",
+  AutoAppliedAfterDate: new Date("2030-03-01T00:00:00Z"),
+  Description: "Upgrade to Aurora PostgreSQL 16.13.5",
+};
+const FORCED_ONLY = {
+  Action: "db-upgrade",
+  ForcedApplyDate: new Date("2030-04-01T00:00:00Z"),
+  Description: "Engine minor version upgrade",
+};
+const OPTED_IN = {
+  Action: "system-update",
+  OptInStatus: "next-maintenance",
+  CurrentApplyDate: new Date("2030-05-01T00:00:00Z"),
+  Description: "New Operating System patch is available",
+};
+
+function cluster(name, ...details) {
+  return {
+    ResourceIdentifier: `arn:aws:rds:${REGION}:123456789012:cluster:${name}`,
+    PendingMaintenanceActionDetails: details,
+  };
+}
+
+const UNDATED_ONLY = [
+  cluster("app-cluster", UNDATED_CLUSTER_OS_PATCH),
+  resource("app-db-0", UNDATED_OS_PATCH),
+  resource("app-db-1", UNDATED_OS_PATCH),
 ];
 
 let pending;
@@ -138,7 +174,7 @@ describe("RDS maintenance check with ignored action types", () => {
     ]);
     const text = reportText(rdsMaintenance.format(findings));
     assert.ok(text.includes("4 pending action(s) across 3 resource(s)"));
-    assert.ok(text.includes("- os-upgrade | Auto-apply: N/A"));
+    assert.ok(text.includes("- os-upgrade | Auto-apply: 2029-12-01"));
   });
 
   it("finds nothing when every pending action is of an ignored type", async () => {
@@ -193,5 +229,60 @@ describe("scheduled check with RDS_MAINTENANCE_IGNORED_ACTIONS=os-upgrade", () =
     assert.ok(text.includes("system-update"));
     assert.ok(text.includes("db-upgrade"));
     assert.ok(!text.includes("os-upgrade"));
+  });
+});
+
+describe("RDS maintenance check with undated actions", () => {
+  it("finds nothing when no pending action has an apply date", async () => {
+    pending = UNDATED_ONLY;
+    assert.deepEqual(await rdsMaintenance.check([REGION], []), []);
+  });
+
+  it("keeps a dated engine upgrade of the same action type as an undated OS patch", async () => {
+    pending = [resource("app-db-0", UNDATED_OS_PATCH), resource("app-db-1", UNDATED_OS_PATCH, DATED_ENGINE_UPGRADE)];
+    const findings = await rdsMaintenance.check([REGION], []);
+
+    assert.deepEqual(findings.map((f) => f.ResourceIdentifier.split(":").pop()), ["app-db-1"]);
+    const text = reportText(rdsMaintenance.format(findings));
+    assert.ok(text.includes("1 pending action(s) across 1 resource(s)"));
+    assert.ok(text.includes("- system-update | Auto-apply: 2030-03-01"));
+    assert.ok(text.includes("Upgrade to Aurora PostgreSQL 16.13.5"));
+    assert.ok(!text.includes("New Operating System patch is available"));
+  });
+
+  it("keeps an action dated only by its forced apply date or by a next-maintenance opt-in", async () => {
+    pending = [resource("app-db-0", FORCED_ONLY), resource("app-db-1", OPTED_IN)];
+    const findings = await rdsMaintenance.check([REGION], []);
+
+    const text = reportText(rdsMaintenance.format(findings));
+    assert.ok(text.includes("2 pending action(s) across 2 resource(s)"));
+    assert.ok(text.includes("- db-upgrade | Auto-apply: 2030-04-01"));
+    assert.ok(text.includes("- system-update | Auto-apply: 2030-05-01"));
+    assert.deepEqual(rdsMaintenance.summarize(findings), [
+      `app-db-0 (${REGION}): db-upgrade auto-apply 2030-04-01`,
+      `app-db-1 (${REGION}): system-update auto-apply 2030-05-01`,
+    ]);
+  });
+});
+
+describe("scheduled check with undated actions", () => {
+  it("sends no report for a batch of only undated actions", async () => {
+    pending = UNDATED_ONLY;
+    const result = await handleScheduledCheck();
+
+    assert.deepEqual(result, { statusCode: 200, body: "OK" });
+    assert.deepEqual(posted, []);
+  });
+
+  it("sends one report listing only the dated actions", async () => {
+    pending = [...UNDATED_ONLY, resource("app-db-2", DATED_ENGINE_UPGRADE)];
+    await handleScheduledCheck();
+
+    assert.equal(posted.length, 1);
+    assert.equal(posted[0].text, ":calendar: RDS Pending Maintenance - 1 action(s)");
+    const text = reportText(posted[0]);
+    assert.ok(text.includes("app-db-2"));
+    assert.ok(!text.includes("app-cluster"));
+    assert.ok(!text.includes("app-db-0"));
   });
 });
