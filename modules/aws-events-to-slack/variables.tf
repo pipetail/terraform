@@ -97,7 +97,7 @@ variable "access_key_warning_days" {
 }
 
 variable "rds_maintenance_ignored_actions" {
-  description = "RDS pending maintenance action types, such as os-upgrade, that the daily check leaves out of its Slack report. A resource with only ignored actions is not listed, and no report is sent when no action is left. The empty default reports every action."
+  description = "RDS pending maintenance action types, such as os-upgrade, that the daily check leaves out of its Slack report. A resource with only ignored actions is not listed, and no report is sent when no action is left. The empty default reports every action that has an apply date. An undated action is optional and is never reported."
   type        = list(string)
   default     = []
 

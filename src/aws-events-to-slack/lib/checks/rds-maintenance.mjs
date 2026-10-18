@@ -1,6 +1,12 @@
 import { RDSClient, DescribePendingMaintenanceActionsCommand } from "@aws-sdk/client-rds";
 import { AWS_ACCOUNT_NAME, RDS_MAINTENANCE_IGNORED_ACTIONS } from "../config.mjs";
 
+// RDS never applies an action without one of these dates on its own, so an
+// undated action is optional and not worth a daily report.
+function applyDate(detail) {
+  return detail.AutoAppliedAfterDate || detail.ForcedApplyDate || detail.CurrentApplyDate;
+}
+
 export async function check(regions, ignoredActions = RDS_MAINTENANCE_IGNORED_ACTIONS) {
   const allActions = [];
 
@@ -14,7 +20,7 @@ export async function check(regions, ignoredActions = RDS_MAINTENANCE_IGNORED_AC
 
         for (const action of response.PendingMaintenanceActions || []) {
           const details = action.PendingMaintenanceActionDetails || [];
-          const kept = details.filter((detail) => !ignoredActions.includes(detail.Action));
+          const kept = details.filter((detail) => applyDate(detail) && !ignoredActions.includes(detail.Action));
           // With no findings left, the scheduled handler sends no report.
           if (details.length > 0 && kept.length === 0) continue;
           allActions.push({ ...action, PendingMaintenanceActionDetails: kept, Region: region });
@@ -36,11 +42,8 @@ export function summarize(actions) {
     const resourceName = arn.split(":").pop() || arn;
     const details = (action.PendingMaintenanceActionDetails || []).map((detail) => {
       const actionType = detail.Action || "unknown";
-      const autoApply = detail.AutoAppliedAfterDate
-        ? new Date(detail.AutoAppliedAfterDate).toISOString().split("T")[0]
-        : detail.ForcedApplyDate
-          ? new Date(detail.ForcedApplyDate).toISOString().split("T")[0]
-          : "N/A";
+      const date = applyDate(detail);
+      const autoApply = date ? new Date(date).toISOString().split("T")[0] : "N/A";
       return `${actionType} auto-apply ${autoApply}`;
     }).join(", ");
     return `${resourceName} (${action.Region}): ${details}`;
@@ -68,11 +71,8 @@ export function format(actions) {
 
     for (const detail of action.PendingMaintenanceActionDetails || []) {
       const actionType = detail.Action || "unknown";
-      const autoApply = detail.AutoAppliedAfterDate
-        ? new Date(detail.AutoAppliedAfterDate).toISOString().split("T")[0]
-        : detail.ForcedApplyDate
-          ? new Date(detail.ForcedApplyDate).toISOString().split("T")[0]
-          : "N/A";
+      const date = applyDate(detail);
+      const autoApply = date ? new Date(date).toISOString().split("T")[0] : "N/A";
       const description = detail.Description || "";
 
       text += `\n  - ${actionType} | Auto-apply: ${autoApply}`;
