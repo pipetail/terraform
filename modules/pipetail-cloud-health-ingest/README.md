@@ -29,7 +29,7 @@ needs bash or zsh.
   d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
   printf 'Paste the AWS Health ingest key (input hidden): ' >&2
   IFS= read -rs key; printf '\n' >&2
-  printf '{"Name":"%s","AuthParameters":{"ApiKeyAuthParameters":{"ApiKeyName":"X-Pipetail-Ingest-Key","ApiKeyValue":"%s"}}}' "$name" "$key" > "$d/connection.json"
+  printf '{"Name":"%s","AuthorizationType":"API_KEY","AuthParameters":{"ApiKeyAuthParameters":{"ApiKeyName":"X-Pipetail-Ingest-Key","ApiKeyValue":"%s"}}}' "$name" "$key" > "$d/connection.json"
   aws events update-connection --region "$region" --cli-input-json "file://$d/connection.json"
 )
 ```
