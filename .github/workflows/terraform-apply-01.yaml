@@ -42,7 +42,7 @@ jobs:
           aws-region: eu-west-1
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@82a1042d40c66856406bf648832fc5d6b03ca74c # v3
+        uses: dflook/terraform-apply@68917ead2fe88dbcf5a7eb689e44f31e0bcbbff3 # v3
         with:
           path: examples/01-minimal-aws-cloudformation-bootstrap
           auto_approve: ${{ github.event.inputs.auto_approve || 'false' }}
