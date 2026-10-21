@@ -43,7 +43,7 @@ jobs:
 
 
       - name: Terraform apply
-        uses: dflook/terraform-apply@68917ead2fe88dbcf5a7eb689e44f31e0bcbbff3 # v3
+        uses: dflook/terraform-apply@9fdc48d2744ee0528495a136ad2cd31ad8208a67 # v3
         with:
           path: examples/02-minimal-gcp-tf-bootstrap
           auto_approve: ${{ github.event.inputs.auto_approve || 'false' }}
