@@ -147,6 +147,21 @@ run "scan_read_reads_network_interfaces" {
   }
 }
 
+run "scan_read_reads_iam_roles" {
+  command = apply
+
+  assert {
+    condition = length(setsubtract(
+      ["iam:GetRole", "iam:GetRolePolicy", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies", "iam:ListRoles"],
+      flatten([
+        for s in jsondecode(aws_iam_role_policy.scan_read.policy).Statement : flatten([s.Action])
+        if s.Sid == "PipetailScanRead" && s.Resource == "*"
+      ])
+    )) == 0
+    error_message = "PipetailScanRead must grant iam:GetRole, iam:GetRolePolicy, iam:ListAttachedRolePolicies, iam:ListRolePolicies and iam:ListRoles; the portal checks its advertised actions against that statement only."
+  }
+}
+
 run "exposes_the_role_name" {
   command = apply
 
