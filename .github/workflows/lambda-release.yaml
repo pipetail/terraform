@@ -66,7 +66,7 @@ jobs:
         if: env.RELEASE == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Package Lambda (reproducible zip)
         if: env.RELEASE == 'true'
