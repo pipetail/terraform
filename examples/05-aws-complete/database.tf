@@ -9,7 +9,7 @@ locals {
 module "db" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/rds-aurora/aws"
-  version = "10.4.1"
+  version = "10.4.2"
 
   name          = "${var.name_prefix}-main"
   database_name = "app"
