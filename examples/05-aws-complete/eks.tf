@@ -6,11 +6,9 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  k8s_version      = "1.37"
-  k8s_architecture = "arm64"
-
-  // bottlerocket v1.68.1, bumped by the update-bottlerocket-ami workflow
-  worker_ami_id = "ami-0dd0f60b707b8dc53"
+  k8s_version      = local.bottlerocket.k8s_version
+  k8s_architecture = local.bottlerocket.k8s_architecture
+  worker_ami_id    = local.bottlerocket.worker_ami_id
 
   kms_key_administrators         = [data.aws_iam_role.github_actions.arn]
   secrets_encryption_kms_key_arn = aws_kms_key.main.arn
@@ -57,6 +55,10 @@ module "eks" {
 }
 
 locals {
+  // update-bottlerocket-ami.yaml reads this file with jq and rewrites
+  // worker_ami_id, so the values must stay plain JSON strings
+  bottlerocket = jsondecode(file("${path.module}/bottlerocket.json"))
+
   eks_admin_principals = coalesce(
     var.eks_administrator_principals,
     ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"],
