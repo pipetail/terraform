@@ -11,7 +11,7 @@ delivery has the fixed name `cloudtrail-cloudwatch`, so use one instance per acc
 
 ```hcl
 module "cloudtrail" {
-  source = "github.com/pipetail/terraform//modules/cloudtrail?ref=cloudtrail-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/cloudtrail?ref=cloudtrail-v1.0.3"
 
   name_prefix = "example"
   kms_key_arn = "arn:aws:kms:eu-west-1:123456789012:key/00000000-0000-0000-0000-000000000000"
