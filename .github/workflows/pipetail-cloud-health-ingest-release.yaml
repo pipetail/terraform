@@ -70,3 +70,11 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$TAG" \
             --notes "pipetail-cloud-health-ingest module ${VERSION}"
+
+  readme-pins:
+    needs: release
+    name: Update README pins
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/readme-pins-pr.yaml

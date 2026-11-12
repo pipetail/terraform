@@ -20,7 +20,7 @@ Pin a module by its release tag. Modules carry `terraform test` suites under `te
 | [`pipetail-cloud-role`](modules/pipetail-cloud-role) | Read-only cross-account role for pipetail.cloud, trusted with an external id | `pipetail-cloud-role-v2.8.0` | none |
 | [`wireguard-ec2`](modules/wireguard-ec2) | WireGuard VPN host on EC2 from a Packer-built AMI | `wireguard-ec2-v1.0.1` | [04](examples/04-aws-wireguard-vpn) |
 
-CI checks the "Latest" column and the `?ref=` pins in the module READMEs against the release tags. After a release, update them with `git tag --list | node .github/scripts/readme-pins.mjs`.
+After each release, a workflow opens a PR that updates the "Latest" column and the `?ref=` pins in the module READMEs. To update them by hand, run `git tag --list | node .github/scripts/readme-pins.mjs`.
 
 ## Using a module
 
