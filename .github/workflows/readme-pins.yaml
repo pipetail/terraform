@@ -5,6 +5,10 @@ permissions:
 
 on:
   pull_request:
+    paths:
+      - "**/README.md"
+      - ".github/scripts/readme-pins.mjs"
+      - ".github/workflows/readme-pins.yaml"
 
 jobs:
   readme-pins:
