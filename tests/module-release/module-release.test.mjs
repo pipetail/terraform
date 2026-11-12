@@ -98,7 +98,7 @@ test("checkTitle rejects a title that is not a conventional commit", () => {
 test("the Bottlerocket AMI workflow opens a PR whose title passes checkTitle", () => {
   const repo = new URL("../../", import.meta.url);
   const workflow = readFileSync(new URL(".github/workflows/update-bottlerocket-ami.yaml", repo), "utf8");
-  const file = /^\s*TERRAFORM_FILE: (\S+)$/m.exec(workflow)[1];
+  const file = /^\s*PIN_FILE: (\S+)$/m.exec(workflow)[1];
   const title = /^\s*title: "(.+)"$/m.exec(workflow)[1].replace("${{ steps.get-version.outputs.version }}", "v1.66.0");
   const modules = new Set(
     readdirSync(new URL("modules/", repo), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name),
