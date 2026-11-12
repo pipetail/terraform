@@ -82,7 +82,12 @@ if (baseFlag === -1) {
   // that is not older than it.
   const inBase = scan(base).flatMap((r) => r.stale);
   let introduced = 0;
-  for (const pin of scan(".").flatMap((r) => r.stale)) {
+  // Oldest first: an older pin has fewer base pins it can take, so a newer
+  // pin that goes first can take the only one that fits the older pin.
+  const inHead = scan(".")
+    .flatMap((r) => r.stale)
+    .sort((a, b) => (a.version === b.version ? 0 : newer(a.version, b.version) === a.version ? 1 : -1));
+  for (const pin of inHead) {
     const i = inBase.findIndex((b) => b.file === pin.file && b.mod === pin.mod && newer(b.version, pin.version) === pin.version);
     if (i !== -1) {
       inBase.splice(i, 1);

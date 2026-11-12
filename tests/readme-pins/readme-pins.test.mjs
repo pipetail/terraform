@@ -64,6 +64,13 @@ test("--base passes on a pin that the head moved forward before a newer release"
   assert.equal(run(base, ["eks-v1.0.0", "eks-v1.1.0", "eks-v1.2.0"], ["--base", head]).status, 1);
 });
 
+test("--base passes when the head reorders the stale pins of the base", () => {
+  const base = checkout({ "modules/eks/README.md": pin("eks-v1.0.0") + pin("eks-v2.0.0") });
+  const head = checkout({ "modules/eks/README.md": pin("eks-v2.0.0") + pin("eks-v1.0.0") });
+  const result = run(head, ["eks-v3.0.0"], ["--base", base]);
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test("--base fails on a stale pin that the head adds", () => {
   const base = checkout({ "modules/eks/README.md": pin("eks-v1.0.0"), "modules/kms/README.md": pin("kms-v1.2.0") });
   const tags = ["eks-v1.1.0", "kms-v1.2.0"];
