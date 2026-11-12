@@ -1,14 +1,3 @@
-terraform {
-  required_version = ">= 1.0.0"
-  required_providers {
-    aws = {
-      source                = "hashicorp/aws"
-      version               = ">= 4.0, < 7.0.0"
-      configuration_aliases = [aws.virginia]
-    }
-  }
-}
-
 resource "aws_acm_certificate" "main" {
   #checkov:skip=CKV2_AWS_71: Wildcard certificates are intentionally supported
   domain_name       = var.domain_name

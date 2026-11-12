@@ -8,6 +8,7 @@ Every workflow lives in [`.github/workflows`](../.github/workflows). Every actio
 |---|---|
 | `precommit.yaml` | Runs the pre-commit hooks on the files the PR changes, then runs `conftest verify` and `conftest test` over the whole tree. |
 | `terraform-test.yaml` | Runs `terraform init` and `terraform test` for every module that has a `tests/` directory. The tests use mock providers, so they need no cloud credentials. |
+| `terraform-module-versions.yaml` | Runs `terraform init -backend=false` and `terraform validate` for every module, once with the lowest Terraform version its `required_version` allows and once with the newest release. |
 | `pr-title.yaml` | Checks that the title is a conventional commit, and that its scope names the one module the PR changes. The title decides the release bump. |
 | `terraform-plan-NN.yaml` | Plans each example the PR affects and posts the plan on the PR. |
 | `terraform-validate.yaml` | Checks `terraform fmt` across the repo. |

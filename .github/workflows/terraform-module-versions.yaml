@@ -1,0 +1,43 @@
+---
+name: terraform-module-versions
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'modules/**'
+      - 'tests/validate-modules/**'
+      - '.github/scripts/validate-modules.mjs'
+      - '.github/workflows/terraform-module-versions.yaml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate modules (${{ matrix.terraform }})
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # floor: the lowest version each module's required_version allows.
+        # latest: the newest Terraform release.
+        terraform:
+          - floor
+          - latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+
+      - name: Run validate-modules unit tests
+        run: node --test 'tests/validate-modules/*.test.mjs'
+
+      - name: terraform init and validate
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/plugin-cache
+        run: node .github/scripts/validate-modules.mjs "${{ matrix.terraform }}"
