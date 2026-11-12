@@ -39,6 +39,6 @@ Rules for anyone, human or agent, changing this repo. Each rule below is enforce
 ## Pull requests
 
 - The title is a Conventional Commit, and its scope names the module the PR changes: `fix(eks): ...`. `pr-title.yaml` rejects any other scope for a single-module PR. Split a PR that touches two modules.
-- The squash-merged title decides the release: `fix` is a patch, `feat` a minor, `!` or a `BREAKING CHANGE:` footer a major. `module-release.yaml` cuts the tag. Never edit a version by hand, with three exceptions that have their own release workflows. A change to `pipetail-cloud-role` or `pipetail-cloud-health-ingest` must bump the module's `VERSION` file. A change to the Lambda in `src/aws-events-to-slack/` must bump its `package.json`. Their release workflows fail on an unbumped change.
+- The squash-merged title decides the release: `fix` is a patch, `feat` a minor, `!` or a `BREAKING CHANGE:` footer a major. `module-release.yaml` cuts the tag. Never edit a version by hand, with three exceptions that have their own release workflows. A change to `pipetail-cloud-role` or `pipetail-cloud-health-ingest` must bump the module's `VERSION` file. A change to the Lambda in `src/aws-events-to-slack/`, or to a `.tf` file in `modules/aws-events-to-slack/`, must bump `src/aws-events-to-slack/package.json`. Their release workflows fail on an unbumped change.
 - Changes to only `.md` files or a module's `tests/` directory are not released.
 - Run `pre-commit run --files <changed files>` before pushing. CI runs the same hooks, plus the policies over the whole tree.
