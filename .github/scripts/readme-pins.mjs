@@ -40,8 +40,6 @@ function latestVersion(root, mod) {
   return valid.length === 0 ? null : valid.reduce(newer);
 }
 
-// Returns the READMEs of one checkout that have a stale pin, each with its
-// rewritten text and one { file, mod, version } entry per stale pin.
 function scan(root) {
   const modules = readdirSync(join(root, "modules"), { withFileTypes: true })
     .filter((d) => d.isDirectory())

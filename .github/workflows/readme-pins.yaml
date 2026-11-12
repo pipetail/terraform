@@ -37,8 +37,6 @@ jobs:
       - name: Check out the base commit
         run: git worktree add --detach "$RUNNER_TEMP/base" HEAD^1
 
-      # A release on master makes pins stale in every open PR until the
-      # update-readme-pins PR merges, so only pins that the base lacks fail.
       - name: Fail when the PR adds a stale pin
         run: |
           if ! git tag --list | node .github/scripts/readme-pins.mjs --base "$RUNNER_TEMP/base"; then
