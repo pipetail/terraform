@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Rewrite the pins from the newest release tags
         run: git tag --list | node .github/scripts/readme-pins.mjs
