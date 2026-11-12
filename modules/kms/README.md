@@ -11,7 +11,7 @@ key has `prevent_destroy` set, so Terraform refuses any plan that would delete o
 
 ```hcl
 module "kms" {
-  source = "github.com/pipetail/terraform//modules/kms?ref=kms-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/kms?ref=kms-v1.0.1"
 
   region                 = "eu-west-1"
   key_administrator_arns = ["arn:aws:iam::123456789012:role/terraform"]

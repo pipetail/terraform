@@ -11,7 +11,7 @@ a VPC is enough and a managed Client VPN endpoint is not needed.
 
 ```hcl
 module "wireguard" {
-  source = "github.com/pipetail/terraform//modules/wireguard-ec2?ref=wireguard-ec2-v1.0.1"
+  source = "github.com/pipetail/terraform//modules/wireguard-ec2?ref=wireguard-ec2-v1.0.2"
 
   vpc_id               = "vpc-0123456789abcdef0"
   subnet_id            = "subnet-0123456789abcdef0"
