@@ -9,6 +9,7 @@ on:
       - "**/README.md"
       - ".github/scripts/readme-pins.mjs"
       - ".github/workflows/readme-pins.yaml"
+      - "tests/readme-pins/**"
 
 jobs:
   readme-pins:
@@ -29,12 +30,18 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Rewrite the pins from the newest release tags
-        run: git tag --list | node .github/scripts/readme-pins.mjs
+      - name: Run readme-pins unit tests
+        run: node --test 'tests/readme-pins/*.test.mjs'
 
-      - name: Fail when a committed README has a stale pin
+      # The checkout is the PR merge commit; its first parent is the base it merged into.
+      - name: Check out the base commit
+        run: git worktree add --detach "$RUNNER_TEMP/base" HEAD^1
+
+      # A release on master makes pins stale in every open PR until the
+      # update-readme-pins PR merges, so only pins that the base lacks fail.
+      - name: Fail when the PR adds a stale pin
         run: |
-          if ! git diff --exit-code -- README.md 'modules/*/README.md'; then
-            echo "::error::A README pins an old module version. Run 'git fetch --tags && git tag --list | node .github/scripts/readme-pins.mjs' and commit the result."
+          if ! git tag --list | node .github/scripts/readme-pins.mjs --base "$RUNNER_TEMP/base"; then
+            echo "::error::This PR adds a README pin of an old module version. Run 'git fetch --tags && git tag --list | node .github/scripts/readme-pins.mjs' and commit the result."
             exit 1
           fi
