@@ -11,7 +11,7 @@ waits on the us-east-1 copy as well, and `virginia_certificate_arn` is known onl
 
 ```hcl
 module "certificate" {
-  source = "github.com/pipetail/terraform//modules/certificate?ref=certificate-v1.0.1"
+  source = "github.com/pipetail/terraform//modules/certificate?ref=certificate-v1.0.2"
 
   providers = {
     aws          = aws

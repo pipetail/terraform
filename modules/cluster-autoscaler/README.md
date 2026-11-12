@@ -11,7 +11,7 @@ a `helm` provider connected to the cluster.
 
 ```hcl
 module "cluster_autoscaler" {
-  source = "github.com/pipetail/terraform//modules/cluster-autoscaler?ref=cluster-autoscaler-v2.0.0"
+  source = "github.com/pipetail/terraform//modules/cluster-autoscaler?ref=cluster-autoscaler-v2.0.1"
 
   cluster_name            = "example"
   cluster_oidc_issuer_url = "https://oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
