@@ -1,0 +1,56 @@
+name: readme-pins-pr
+
+# Called by every workflow that creates a module tag, after the tag exists.
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Several release workflows can start from one push, and they all push the same branch.
+concurrency:
+  group: readme-pins-pr
+  cancel-in-progress: false
+
+jobs:
+  readme-pins-pr:
+    runs-on: ubuntu-latest
+    name: Open or update the README pins PR
+    timeout-minutes: 5
+    steps:
+      # The script reads the release tags, and a shallow checkout has none.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: master
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+
+      - name: Rewrite the pins from the newest release tags
+        run: git tag --list | node .github/scripts/readme-pins.mjs
+
+      # The fixed branch makes a second release update the open PR. No commit
+      # and no PR appear when the READMEs already match the tags.
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: |
+            README.md
+            modules/*/README.md
+          commit-message: "docs: update README version pins"
+          branch: update-readme-pins
+          title: "docs: update README version pins"
+          body: |
+            Updates the "Latest" column and the `?ref=` pins in the READMEs to the newest release tags.
+
+            > PRs created with `GITHUB_TOKEN` won't trigger `on: pull_request` workflows automatically.
+            > Close and reopen the PR to trigger the checks.
+          base: master
+          delete-branch: true

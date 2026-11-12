@@ -12,7 +12,7 @@ Terraform cluster admin, and the public API endpoint is open to `0.0.0.0/0` unle
 
 ```hcl
 module "eks" {
-  source = "github.com/pipetail/terraform//modules/eks?ref=eks-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/eks?ref=eks-v1.1.2"
 
   name                           = "example"
   vpc_id                         = "vpc-0123456789abcdef0"

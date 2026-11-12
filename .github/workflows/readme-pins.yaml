@@ -1,0 +1,45 @@
+name: readme-pins
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "**/README.md"
+      - ".github/scripts/readme-pins.mjs"
+      - ".github/workflows/readme-pins.yaml"
+      - "tests/readme-pins/**"
+
+jobs:
+  readme-pins:
+    runs-on: ubuntu-latest
+    name: Check README version pins
+    timeout-minutes: 5
+    steps:
+      # The script reads the release tags, and a shallow checkout has none.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+
+      - name: Run readme-pins unit tests
+        run: node --test 'tests/readme-pins/*.test.mjs'
+
+      # The checkout is the PR merge commit; its first parent is the base it merged into.
+      - name: Check out the base commit
+        run: git worktree add --detach "$RUNNER_TEMP/base" HEAD^1
+
+      - name: Fail when the PR adds a stale pin
+        run: |
+          if ! git tag --list | node .github/scripts/readme-pins.mjs --base "$RUNNER_TEMP/base"; then
+            echo "::error::This PR adds a README pin of an old module version. Run 'git fetch --tags && git tag --list | node .github/scripts/readme-pins.mjs' and commit the result."
+            exit 1
+          fi

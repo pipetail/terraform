@@ -22,7 +22,7 @@ the only artifact a consumer needs to track.
 
 ```hcl
 module "aws_events_to_slack" {
-  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.8.2"
+  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.11.0"
 
   lambda_version           = "1.8.2"
   account_name             = "my-account"

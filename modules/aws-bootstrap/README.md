@@ -14,7 +14,7 @@ first, then add the backend block and re-run to migrate:
 
 ```hcl
 module "bootstrap" {
-  source = "github.com/pipetail/terraform//modules/aws-bootstrap?ref=aws-bootstrap-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/aws-bootstrap?ref=aws-bootstrap-v1.0.2"
 
   region      = "eu-west-1"
   name_prefix = "my-account"

@@ -93,3 +93,11 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "$TAG" \
             --notes "aws-events-to-slack Lambda package ${VERSION}"
+
+  readme-pins:
+    needs: release
+    name: Update README pins
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/readme-pins-pr.yaml

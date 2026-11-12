@@ -40,3 +40,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BEFORE: ${{ github.event.before }}
         run: node .github/scripts/module-release.mjs release
+
+  readme-pins:
+    needs: release
+    name: Update README pins
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/readme-pins-pr.yaml

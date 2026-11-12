@@ -12,7 +12,7 @@ an account holds only one provider per URL, so use one instance per account.
 
 ```hcl
 module "github_oidc" {
-  source = "github.com/pipetail/terraform//modules/github-oidc?ref=github-oidc-v1.0.0"
+  source = "github.com/pipetail/terraform//modules/github-oidc?ref=github-oidc-v1.0.1"
 
   repository_name = "example-org/example-repo"
 }
