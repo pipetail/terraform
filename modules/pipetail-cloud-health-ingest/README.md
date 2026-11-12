@@ -11,7 +11,7 @@ us-east-1, where AWS delivers the Health events that are not tied to a Region.
 
 ```hcl
 module "pipetail_cloud_health_ingest" {
-  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v2.0.0"
+  source = "github.com/pipetail/terraform//modules/pipetail-cloud-health-ingest?ref=pipetail-cloud-health-ingest-v2.0.1"
 }
 ```
 
@@ -44,7 +44,7 @@ the snippet. To rotate the key, run the snippet again with the new value. No app
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.24.0, < 7.0.0 |
 
 ## Providers

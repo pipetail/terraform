@@ -22,7 +22,7 @@ the only artifact a consumer needs to track.
 
 ```hcl
 module "aws_events_to_slack" {
-  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.11.0"
+  source = "github.com/pipetail/terraform//modules/aws-events-to-slack?ref=aws-events-to-slack-v1.11.1"
 
   lambda_version           = "1.8.2"
   account_name             = "my-account"
@@ -57,7 +57,7 @@ this module. When a bot token and `slack_channel` are present the function posts
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0.0, < 7.0.0 |
 | <a name="requirement_http"></a> [http](#requirement\_http) | >= 3.0, < 4.0.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.0, < 4.0.0 |

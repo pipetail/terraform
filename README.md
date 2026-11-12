@@ -9,15 +9,15 @@ Pin a module by its release tag. Modules carry `terraform test` suites under `te
 | Module | What it creates | Latest | Example |
 |---|---|---|---|
 | [`aws-bootstrap`](modules/aws-bootstrap) | S3 state bucket with access logging, optional DynamoDB lock table | `aws-bootstrap-v1.0.2` | [06](examples/06-minimal-aws-terraform-bootstrap) |
-| [`aws-events-to-slack`](modules/aws-events-to-slack) | Lambda that forwards AWS Health, maintenance, budget and security events to Slack | `aws-events-to-slack-v1.11.0` | [05](examples/05-aws-complete) |
+| [`aws-events-to-slack`](modules/aws-events-to-slack) | Lambda that forwards AWS Health, maintenance, budget and security events to Slack | `aws-events-to-slack-v1.11.1` | [05](examples/05-aws-complete) |
 | [`certificate`](modules/certificate) | ACM certificate with DNS validation, plus a us-east-1 copy for CloudFront | `certificate-v1.0.1` | [05](examples/05-aws-complete) |
 | [`cloudtrail`](modules/cloudtrail) | Multi-region CloudTrail to an encrypted S3 bucket and CloudWatch Logs | `cloudtrail-v1.0.3` | [08](examples/08-aws-audit-logging) |
 | [`cluster-autoscaler`](modules/cluster-autoscaler) | Cluster Autoscaler Helm release with an IRSA role | `cluster-autoscaler-v2.0.0` | none yet |
 | [`eks`](modules/eks) | EKS cluster with Bottlerocket node groups, access entries and KMS secrets encryption | `eks-v1.1.2` | [05](examples/05-aws-complete), [07](examples/07-aws-eks) |
 | [`github-oidc`](modules/github-oidc) | GitHub Actions OIDC provider and a role trusted only by named subjects | `github-oidc-v1.0.1` | [03](examples/03-aws-github-actions-oidc) |
 | [`kms`](modules/kms) | Shared KMS key with rotation and scoped grants for CloudWatch Logs and CloudTrail | `kms-v1.0.0` | [08](examples/08-aws-audit-logging) |
-| [`pipetail-cloud-health-ingest`](modules/pipetail-cloud-health-ingest) | EventBridge rule that sends AWS Health events to pipetail.cloud | `pipetail-cloud-health-ingest-v2.0.0` | none |
-| [`pipetail-cloud-role`](modules/pipetail-cloud-role) | Read-only cross-account role for pipetail.cloud, trusted with an external id | `pipetail-cloud-role-v2.8.0` | none |
+| [`pipetail-cloud-health-ingest`](modules/pipetail-cloud-health-ingest) | EventBridge rule that sends AWS Health events to pipetail.cloud | `pipetail-cloud-health-ingest-v2.0.1` | none |
+| [`pipetail-cloud-role`](modules/pipetail-cloud-role) | Read-only cross-account role for pipetail.cloud, trusted with an external id | `pipetail-cloud-role-v2.8.1` | none |
 | [`wireguard-ec2`](modules/wireguard-ec2) | WireGuard VPN host on EC2 from a Packer-built AMI | `wireguard-ec2-v1.0.1` | [04](examples/04-aws-wireguard-vpn) |
 
 After each release, a workflow opens a PR that updates the "Latest" column and the `?ref=` pins in the module READMEs. To update them by hand, run `git tag --list | node .github/scripts/readme-pins.mjs`.
