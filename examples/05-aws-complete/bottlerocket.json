@@ -1,5 +1,5 @@
 {
   "k8s_version": "1.37",
   "k8s_architecture": "arm64",
-  "worker_ami_id": "ami-0dd0f60b707b8dc53"
+  "worker_ami_id": "ami-08d25c07b4db18cfe"
 }
