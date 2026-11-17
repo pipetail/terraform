@@ -11,7 +11,7 @@ locals {
 module "eks" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.29.0"
+  version = "21.30.2"
 
   // Leaving endpoint_public_access_cidrs unset falls through to the upstream
   // default of 0.0.0.0/0, i.e. the Kubernetes API is reachable from anywhere
@@ -229,7 +229,7 @@ resource "aws_security_group_rule" "eks_workers_to_eks_workers_all" {
 module "ebs_csi_irsa" {
   #checkov:skip=CKV_TF_1:Using registry versioned modules
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
-  version = "6.8.2"
+  version = "6.11.1"
 
   name                  = substr("${var.name}-ebs-csi-", 0, 32)
   use_name_prefix       = true
