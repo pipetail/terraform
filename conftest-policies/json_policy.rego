@@ -43,8 +43,16 @@ policy_fields := {
 raw_json_field(block, field) if {
 	value := object.get(block, field, "")
 	is_string(value)
-	startswith(trim_space(value), "{")
+	raw_json(trim_space(value))
 }
+
+raw_json(value) if startswith(value, "{")
+
+# The hcl2 parser hands a function call over as an interpolation string, so
+# `file("p.json")` arrives as `${file("p.json")}`.
+raw_json(value) if startswith(value, "${file(")
+
+raw_json(value) if startswith(value, "${templatefile(")
 
 deny_heredoc_json_policy contains msg if {
 	some res_type, fields in policy_fields
@@ -92,5 +100,18 @@ deny_nested_json_policy contains msg if {
 	msg := sprintf(
 		"%s.%s: dynamic '%s' content '%s' uses a raw JSON string — use jsonencode() instead",
 		[res_type, name, nested_type, field],
+	)
+}
+
+module_policy_fields := ["policy", "assume_role_policy"]
+
+deny_module_json_policy contains msg if {
+	some name
+	some block in input.module[name]
+	some field in module_policy_fields
+	raw_json_field(block, field)
+	msg := sprintf(
+		"module.%s: '%s' uses raw JSON (a string, heredoc, file() or templatefile()) — use jsonencode() instead",
+		[name, field],
 	)
 }
