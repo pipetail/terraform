@@ -186,3 +186,33 @@ test_unrelated_nested_block_ignored if {
 	result := deny_nested_json_policy with input as {"resource": {"aws_iam_role": {"ok": [{"tags": [{"policy": "{ \"a\": 1 }"}]}]}}}
 	count(result) == 0
 }
+
+test_module_heredoc_policy_denied if {
+	result := deny_module_json_policy with input as {"module": {"app": [{"source": "./app", "policy": "{\n  \"Version\": \"2012-10-17\"\n}\n"}]}}
+	count(result) == 1
+}
+
+test_module_string_assume_role_policy_denied if {
+	result := deny_module_json_policy with input as {"module": {"app": [{"source": "./app", "assume_role_policy": "{ \"Version\": \"2012-10-17\" }"}]}}
+	count(result) == 1
+}
+
+test_module_jsonencode_policy_allowed if {
+	result := deny_module_json_policy with input as {"module": {"app": [{"source": "./app", "policy": "${jsonencode({ Version = \"2012-10-17\" })}"}]}}
+	count(result) == 0
+}
+
+test_module_file_policy_denied if {
+	result := deny_module_json_policy with input as {"module": {"app": [{"source": "./app", "policy": "${file(\"policy.json\")}"}]}}
+	count(result) == 1
+}
+
+test_file_iam_role_policy_denied if {
+	result := deny_heredoc_json_policy with input as {"resource": {"aws_iam_role_policy": {"example": [{"role": "r", "policy": "${file(\"${path.module}/policy.json\")}"}]}}}
+	count(result) == 1
+}
+
+test_templatefile_iam_role_policy_denied if {
+	result := deny_heredoc_json_policy with input as {"resource": {"aws_iam_role_policy": {"example": [{"role": "r", "policy": "${templatefile(\"policy.json.tftpl\", {})}"}]}}}
+	count(result) == 1
+}
