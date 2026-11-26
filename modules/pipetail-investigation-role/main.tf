@@ -38,9 +38,11 @@ locals {
     "appconfig:GetConfiguration",
     "appconfig:GetHostedConfigurationVersion",
     "appconfig:GetLatestConfiguration",
+    "codebuild:BatchGetBuilds",
     "codebuild:BatchGetProjects",
     "lambda:GetFunction",
     "lambda:GetFunctionConfiguration",
+    "lambda:GetLayerVersion",
 
     # EC2 reads that return passwords, console output or user data.
     # ec2:DescribeLaunchTemplateVersions also returns user data but stays allowed for
@@ -104,6 +106,7 @@ locals {
 
     # Knowledge base and agent memory content.
     "bedrock:AgenticRetrieveStream",
+    "bedrock:GetAgentMemory",
     "bedrock:GetDocumentContent",
     "bedrock:Retrieve",
     "bedrock-agentcore:GetEvent",
