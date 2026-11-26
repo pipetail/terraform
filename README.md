@@ -18,6 +18,7 @@ Pin a module by its release tag. Modules carry `terraform test` suites under `te
 | [`kms`](modules/kms) | Shared KMS key with rotation and scoped grants for CloudWatch Logs and CloudTrail | `kms-v1.0.1` | [08](examples/08-aws-audit-logging) |
 | [`pipetail-cloud-health-ingest`](modules/pipetail-cloud-health-ingest) | EventBridge rule that sends AWS Health events to pipetail.cloud | `pipetail-cloud-health-ingest-v2.0.1` | none |
 | [`pipetail-cloud-role`](modules/pipetail-cloud-role) | Read-only cross-account role for pipetail.cloud, trusted with an external id | `pipetail-cloud-role-v2.8.1` | none |
+| [`pipetail-investigation-role`](modules/pipetail-investigation-role) | Cross-account ReadOnlyAccess role for one pipetail role, with stored-data reads denied | `pipetail-investigation-role-v1.0.0` | none |
 | [`wireguard-ec2`](modules/wireguard-ec2) | WireGuard VPN host on EC2 from a Packer-built AMI | `wireguard-ec2-v1.0.2` | [04](examples/04-aws-wireguard-vpn) |
 
 After each release, a workflow opens a PR that updates the "Latest" column and the `?ref=` pins in the module READMEs. To update them by hand, run `git tag --list | node .github/scripts/readme-pins.mjs`.
