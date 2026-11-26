@@ -5,10 +5,10 @@ The role has the AWS managed `ReadOnlyAccess` policy attached, plus an inline De
 that return stored data: S3 objects, SSM parameter and Secrets Manager values, KMS decrypt,
 Lambda, CodeBuild, AppConfig and Amplify configuration, CodeBuild build environments, Lambda
 layer archives, EC2 passwords, console output and instance user data, database and table items,
-queue and stream messages, Step Functions execution payloads, container images, CodeCommit
-content, API Gateway API key values, Cognito user records and Bedrock retrieval and agent memory
-content. It also denies role chaining, federation tokens, SSM sessions and commands, and the EKS
-Kubernetes API. CloudWatch Logs reads stay allowed.
+queue and stream messages, video stream media, Step Functions execution payloads, container
+images, CodeCommit content, API Gateway API key values, Cognito user records and Bedrock
+retrieval and agent memory content. It also denies role chaining, federation tokens, SSM
+sessions and commands, and the EKS Kubernetes API. CloudWatch Logs reads stay allowed.
 
 The trust policy names a single role ARN and requires the session name `gate-host-agent`, so
 every call shows up under that name in CloudTrail. AWS adds actions to `ReadOnlyAccess` over

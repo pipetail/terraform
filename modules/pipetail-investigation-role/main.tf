@@ -84,6 +84,12 @@ locals {
     # Message payloads. sqs:ReceiveMessage also hides the message from its
     # consumers for the visibility timeout.
     "kinesis:GetRecords",
+    "kinesisvideo:GetClip",
+    "kinesisvideo:GetDASHStreamingSessionURL",
+    "kinesisvideo:GetHLSStreamingSessionURL",
+    "kinesisvideo:GetImages",
+    "kinesisvideo:GetMedia",
+    "kinesisvideo:GetMediaForFragmentList",
     "sqs:ReceiveMessage",
     "states:DescribeExecution",
     "states:GetExecutionHistory",
