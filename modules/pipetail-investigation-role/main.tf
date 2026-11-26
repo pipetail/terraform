@@ -31,13 +31,15 @@ locals {
     "kms:Decrypt",
 
     # Configuration that carries environment variables and other values.
-    # lambda:ListFunctions and ecs:DescribeTaskDefinition also return environment
-    # variables but cannot be denied without losing the inventory reads.
+    # lambda:ListFunctions, ecs:DescribeTaskDefinition, amplify:GetApp and
+    # amplify:ListBranches also return environment variables but cannot be denied
+    # without losing the inventory reads.
     "amplify:GetBackendEnvironment",
     "amplify:GetBranch",
     "appconfig:GetConfiguration",
     "appconfig:GetHostedConfigurationVersion",
     "appconfig:GetLatestConfiguration",
+    "codebuild:BatchGetBuildBatches",
     "codebuild:BatchGetBuilds",
     "codebuild:BatchGetProjects",
     "lambda:GetFunction",

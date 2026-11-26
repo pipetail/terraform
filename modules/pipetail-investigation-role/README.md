@@ -13,9 +13,10 @@ Kubernetes API. CloudWatch Logs reads stay allowed.
 The trust policy names a single role ARN and requires the session name `gate-host-agent`, so
 every call shows up under that name in CloudTrail. AWS adds actions to `ReadOnlyAccess` over
 time, and a new action that reads data stays allowed until it is added to the Deny.
-`lambda:ListFunctions` and `ecs:DescribeTaskDefinition` return environment variables, and
-`ec2:DescribeLaunchTemplateVersions` returns launch template user data. They stay allowed,
-because denying them removes the inventory reads.
+`lambda:ListFunctions`, `ecs:DescribeTaskDefinition`, `amplify:GetApp` and
+`amplify:ListBranches` return environment variables, and `ec2:DescribeLaunchTemplateVersions`
+returns launch template user data. They stay allowed, because denying them removes the inventory
+reads.
 
 ## Usage
 

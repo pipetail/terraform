@@ -99,6 +99,7 @@ run "deny_policy_denies_every_data_read" {
         "bedrock:GetDocumentContent",
         "bedrock:Retrieve",
         "cassandra:Select",
+        "codebuild:BatchGetBuildBatches",
         "codebuild:BatchGetBuilds",
         "codebuild:BatchGetProjects",
         "codecommit:GetBlob",
